@@ -1,0 +1,59 @@
+<link rel='stylesheet' type='text/css' href='/static/style.css'>
+
+<h1>Shipping Calculator</h1>
+<link rel="stylesheet" href="//code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css">
+<script src="//code.jquery.com/jquery-1.10.2.js"></script>
+<script src="//code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
+
+<script>
+$(
+
+function() 
+{   
+
+    $("#item_to_add").autocomplete({ source:'item_autocomplete', dataType: "json"});
+});
+
+</script>
+
+<label for='item_to_add'>item: </label>
+<input type='text' name='item_to_add' form='submit_query' id="item_to_add" method='post'>
+
+quantity:
+<input type='text' name='quantity' form='submit_query'>
+
+unit price:
+<input type='text' name='unit_price' form='submit_query'>
+
+<br>
+shipping rate:
+<input type='text' name='shipping_rate' form='submit_query'>
+
+
+
+
+<form action='shipping_calc_form' id='submit_query' method='post'>
+    <input type='submit' value='add' name='add'>
+</form>
+
+<form action='shipping_calc_form' id='submit_query' method='post'>
+    <input type='submit' value='clear' name='clear'>
+</form>
+
+<code>Rate: {{ shipping_rate }}</code>
+
+<table border='1' style='width:300px'>
+<th>Item</th>
+<th>Quantity</th>
+<th>Unit Price</th>
+
+{% for i in items %}
+    <tr> 
+        {% for t in i %}
+            <td>{{ i }}</td>
+        {% endfor %}
+    </tr>
+{% endfor %}
+
+</table>
+
