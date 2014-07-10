@@ -1,30 +1,87 @@
-from flask import Flask
-from flask import render_template
-from flask import request
-from flask import redirect
-from flask import session
-from flask import url_for
-from flask import escape
-from flask.ext.sqlalchemy import SQLAlchemy
-from flask.ext.login import LoginManager
-
+import configparser
 import os
+import logging
+
+from flask import Flask, render_template, request, redirect, session, url_for, \
+                  escape
+
+from flask.ext.sqlalchemy import SQLAlchemy
+from flask.ext.login      import LoginManager
+from flask.ext.security   import Security, SQLAlchemyUserDatastore, UserMixin, \
+                                 RoleMixin, login_required
+
+from werkzeug.security import generate_password_hash, check_password_hash
+
 from libs.utils import Utils
 from libs.pi    import Pi
 
 import evelink.api
 
+config = configparser.ConfigParser()
+config.read('%s/settings.cfg' % (os.getcwd()))
+
+
 eve = evelink.eve.EVE()
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = '%s/user_data.db' % (os.getcwd())
+app.config['DEBUG'] = True
+app.config['SECRET_KEY'] = config.get('general', 'secret-key')
+app.config['SQLALCHEMY_DATABASE_URI'] = config.get('database', 'uri')
 db = SQLAlchemy(app)
 
 login_manager  = LoginManager()
 login_manager.init_app(app)
 
-# temporary
-CORP_ID = 98301190
+CORP_ID = config.get('corp', 'id')
+
+logging.basicConfig(filename=config.get('general', 'log_path'), level=logging.DEBUG)
+
+
+
+
+roles_users = db.Table('roles_users', 
+        db.Column('user_id', db.Integer(), db.ForeignKey('user.id')),
+        db.Column('role_id', db.Integer(), db.ForeignKey('role.id')))
+
+
+class Role(db.Model, RoleMixin):
+    id_  = db.Column(db.Integer(), primary_key=True)
+    name = db.Column(db.String(80), unique=True)
+    description = db.Column(db.String(255))
+
+
+
+
+class Auth(object):
+    def __init__(self, username, password):
+        self.username = username
+        self.set_password(password)
+
+    def set_password(self, password):
+        self.pw_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.pw_hash, password)
+
+class User(db.Model):
+    id_      = db.Column(db.Integer, primary_key=True)
+    email    = db.Column(db.String(120), unique=True)
+    password = db.Column(db.String(255))
+    active   = db.Column(db.Boolean())
+    confirmed_at = db.Column(db.DateTime())
+    roles    = db.relationship('Role', secondary=roles_users,
+                                backref=db.backref('users', lazy='dynamic'))
+    username = db.Column(db.String(80),  unique=True)
+
+    def __init__(self, username, email):
+        self.username = username
+        self.email    = email
+
+    def __repr__(self):
+        return '%r' % self.username
+
+user_datastore = SQLAlchemyUserDatastore(db, User, Role)
+security = Security(app, user_datastore)
 
 
 @login_manager.user_loader 
@@ -35,19 +92,21 @@ def load_user(userid):
 def index():
     return render_template('index.html')
 
-
 @app.route('/register', methods=['POST', 'GET'])
 def register():
 
     if request.method == 'POST':
-        # debug
-        print(request.form)
 
+        logging.info('[register] request.form: %s' % (request.form))
 
         api = evelink.api.API(api_key=(request.form.get('register_keyid'), request.form.get('register_code')))
         account = evelink.account.Account(api)
 
-        characters = account.characters()
+        try:
+            characters = account.characters()
+        except Exception as ex: 
+            logging.warning('[register] exception: %s' % (ex))
+            return render_template('info.html', info="It dosen't seem like you correctly entered your API")
 
 
         if characters.result:
@@ -59,10 +118,13 @@ def register():
                
             # Check to see if we still have any characters left. 
             if characters.result:
-                print(characters.result)
+                logging.info('[register] characters.result: %s' % characters.result)
                 session['characters'] = characters.result
+                
+                return redirect(url_for('confirm_register'))
 
-            return redirect(url_for('confirm_register'))
+            else:
+                return render_template('info.html', info='None of your characters are in the corporation')
 
 
     return render_template('register.html')
@@ -74,21 +136,33 @@ def confirm_register():
         # debug 
         print('[confirm_register] %s' % (request.form))
 
-        return render_template('submitted_register.html')
+      
+        auth = Auth(request.form.get('register_email'), request.form.get('register_password'))
+
+        logging.info('[confirm_register] password hash: %s' % (auth.pw_hash))
+
+        # Make sure user isn't already in the db. 
+        query = User.query.filter_by(username=request.form.get('register_email')).first()
+
+        if request.form.get('register_email') == query.username:
+            return render_template('info.html', info='You have already registered')
         
+
+        # Add the user to the db and generate the password hash.
+        user = User(request.form.get('register_email'), auth.pw_hash)
+        db.session.add(user)
+        db.session.commit()
+
+
+        return render_template('submitted_register.html')
+
+
 
     return render_template('confirm_register.html', characters=session['characters'])
 
 
-
-#def index():
-#    if 'username' in session:
-#        return 'Logged in as %s' % escape(session['username'])
-#
-#    else:
-#        return 'You are not logged in'
-
 @app.route('/pi_lookup_form')
+@login_required
 def pi_lookup_form():
     return render_template('pi_lookup_form.html')
 
@@ -107,9 +181,9 @@ def pi_lookup():
     keys.reverse()
 
     return render_template('pi_lookup.html', system=system[0][0],
-                                               tier=request.args.get('tier'),
-                                               keys=keys,
-                                               items=items)
+                                             tier=request.args.get('tier'),
+                                             keys=keys,
+                                             items=items)
 
 
 
@@ -133,6 +207,4 @@ def login():
 
 
 if __name__ == '__main__':
-    app.debug = True
-    app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
     app.run()

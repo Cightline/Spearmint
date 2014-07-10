@@ -14,7 +14,7 @@
     {% for character in characters -%}
     <div class="checkbox">
         <label>
-            <input type="checkbox" value="{{ characters[character]['id'] }}">
+            <input type="checkbox" value="{{ characters[character]['id'] }}" name="character">
             {{ characters[character]['name'] }}
         </label>
     </div>
