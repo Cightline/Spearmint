@@ -1,14 +1,14 @@
 import configparser
 import os
 import logging
+import copy
+from functools import wraps
 
 from flask import Flask, render_template, request, redirect, session, url_for, \
-                  escape
+                  escape, Response
 
 from flask.ext.sqlalchemy import SQLAlchemy
-from flask.ext.login      import LoginManager
-from flask.ext.security   import Security, SQLAlchemyUserDatastore, UserMixin, \
-                                 RoleMixin, login_required
+from flask.ext.login      import LoginManager, login_user, current_user
 
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -26,30 +26,15 @@ eve = evelink.eve.EVE()
 app = Flask(__name__)
 app.config['DEBUG'] = True
 app.config['SECRET_KEY'] = config.get('general', 'secret-key')
-app.config['SQLALCHEMY_DATABASE_URI'] = config.get('database', 'uri')
+app.config['SQLALCHEMY_DATABASE_URI'] = str(config.get('database', 'uri'))
 db = SQLAlchemy(app)
 
 login_manager  = LoginManager()
 login_manager.init_app(app)
 
-CORP_ID = config.get('corp', 'id')
+CORP_ID = int(config.get('corp', 'id'))
 
 logging.basicConfig(filename=config.get('general', 'log_path'), level=logging.DEBUG)
-
-
-
-
-roles_users = db.Table('roles_users', 
-        db.Column('user_id', db.Integer(), db.ForeignKey('user.id')),
-        db.Column('role_id', db.Integer(), db.ForeignKey('role.id')))
-
-
-class Role(db.Model, RoleMixin):
-    id_  = db.Column(db.Integer(), primary_key=True)
-    name = db.Column(db.String(80), unique=True)
-    description = db.Column(db.String(255))
-
-
 
 
 class Auth(object):
@@ -63,34 +48,84 @@ class Auth(object):
     def check_password(self, password):
         return check_password_hash(self.pw_hash, password)
 
+
+class Character(db.Model):
+    id           = db.Column(db.Integer, primary_key=True)
+    character_id = db.Column(db.Integer)
+    user_id      = db.Column(db.Integer, db.ForeignKey('user.id'))
+
 class User(db.Model):
-    id_      = db.Column(db.Integer, primary_key=True)
-    email    = db.Column(db.String(120), unique=True)
-    password = db.Column(db.String(255))
-    active   = db.Column(db.Boolean())
-    confirmed_at = db.Column(db.DateTime())
-    roles    = db.relationship('Role', secondary=roles_users,
-                                backref=db.backref('users', lazy='dynamic'))
-    username = db.Column(db.String(80),  unique=True)
+    id         = db.Column(db.Integer, primary_key=True)
+    email      = db.Column(db.String(120), unique=True)
+    password   = db.Column(db.String(255))
+    characters = db.relationship('Character', backref='user', lazy='dynamic')
 
-    def __init__(self, username, email):
-        self.username = username
-        self.email    = email
 
-    def __repr__(self):
-        return '%r' % self.username
 
-user_datastore = SQLAlchemyUserDatastore(db, User, Role)
-security = Security(app, user_datastore)
 
+db.create_all()
+db.session.commit()
+
+def check_auth(email, password):
+    query = User.query.filter_by(email=email).first()
+
+    if query:
+        a = Auth(email, password)
+       
+        if a.check_password(password):
+            logging.info('[check_auth] user: %s logged in' % (query.email))
+            return True
+
+        else:
+            logging.info('[check_auth] incorrect password for: %s' % (query.email))
+
+    else:
+        logging.info("[check_auth] couldn't find %s for authentication" % (email))
+
+    return False
+
+def authenticate():
+    return render_template('login.html')
+    #return Response('Could not verify your access level for that URL. \n'
+    #                'You have to login with proper credentials', 401, {'WWW-Authenticate':'Basic realm="Services Login Required"'})
+
+
+def requires_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if not auth or not check_auth(auth.username, auth.password):
+            return authenticate()
+
+        return f(*args, **kwargs)
+
+    return decorated
 
 @login_manager.user_loader 
-def load_user(userid):
-    return None
+def load_user(email):
+    query = User.query.filter_by(email=email).first()
+    return query or None
+
+
+@app.route('/login', methods=['POST','GET'])
+def login():
+    if request.method == 'POST':
+
+        if check_auth(request.form.get('email'), request.form.get('password')):
+            login_user(load_user(request.form.get('email')))
+            return render_template('info.html', info='Successfully logged in')
+
+
+        else:
+            return render_template('info.html', info='Incorrect email/password combination')
+
+    return render_template('login.html')
+
 
 @app.route('/')
 def index():
     return render_template('index.html')
+
 
 @app.route('/register', methods=['POST', 'GET'])
 def register():
@@ -110,17 +145,22 @@ def register():
 
 
         if characters.result:
+            # Store in seperate dictionary so I can edit it. 
+            char_copy = copy.deepcopy(characters.result)
 
             # Remove characters that are not in the corp.
-            for character in characters.result:
-                if characters.result[character]['corp']['id'] != CORP_ID:
-                    del characters.result[character]
+            for c in char_copy:
+                if char_copy[c]['corp']['id'] != CORP_ID:
+                    # Remove from the original dictionary.
+                    logging.info('[register] removing character: %s' % (characters.result[c]))
+                    del characters.result[c]
                
             # Check to see if we still have any characters left. 
             if characters.result:
                 logging.info('[register] characters.result: %s' % characters.result)
+
                 session['characters'] = characters.result
-                
+
                 return redirect(url_for('confirm_register'))
 
             else:
@@ -142,16 +182,33 @@ def confirm_register():
         logging.info('[confirm_register] password hash: %s' % (auth.pw_hash))
 
         # Make sure user isn't already in the db. 
-        query = User.query.filter_by(username=request.form.get('register_email')).first()
+        query = User.query.filter_by(email=request.form.get('register_email')).first()
 
-        if request.form.get('register_email') == query.username:
-            return render_template('info.html', info='You have already registered')
-        
+        if query:
+            if request.form.get('register_email') == query.email:
+                return render_template('info.html', info='You have already registered')
+
+     
+        # Filter out just the character IDs. 
+        character_ids = []
+        for c in session['characters']:
+            character_ids.append(int(c))
+
+        print('IDS', character_ids)
+
 
         # Add the user to the db and generate the password hash.
-        user = User(request.form.get('register_email'), auth.pw_hash)
+        user = User(email=request.form.get('register_email'), 
+                    password=auth.pw_hash)
+     
         db.session.add(user)
         db.session.commit()
+
+        
+        for c in session['characters']:
+            db.session.add(Character(api_id=c, user=user))
+            db.session.commit() 
+
 
 
         return render_template('submitted_register.html')
@@ -162,7 +219,7 @@ def confirm_register():
 
 
 @app.route('/pi_lookup_form')
-@login_required
+@requires_auth
 def pi_lookup_form():
     return render_template('pi_lookup_form.html')
 
@@ -184,22 +241,6 @@ def pi_lookup():
                                              tier=request.args.get('tier'),
                                              keys=keys,
                                              items=items)
-
-
-
-@app.route('/login', methods=['POST', 'GET'])
-def login():
-    if request.method == 'POST':
-        session['username'] = request.form['username']
-        return redirect(url_for('index'))
-
-
-    else:
-        return '''<form action='' method='post'>
-                  <p><input type=text name=username>
-                  <p><input type=submit value=login>
-                  </form>''' 
-    
 
 
 
