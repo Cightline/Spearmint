@@ -58,6 +58,8 @@ class User(db.Model):
     id         = db.Column(db.Integer, primary_key=True)
     email      = db.Column(db.String(120), unique=True)
     password   = db.Column(db.String(255))
+    api_code   = db.Column(db.String(255))
+    api_key_id = db.Column(db.String(255))
     characters = db.relationship('Character', backref='user', lazy='dynamic')
 
 
@@ -160,6 +162,8 @@ def register():
                 logging.info('[register] characters.result: %s' % characters.result)
 
                 session['characters'] = characters.result
+                session['api_code']   = request.form.get('register_code')
+                session['api_key_id']  = request.form.get('register_keyid')
 
                 return redirect(url_for('confirm_register'))
 
@@ -173,9 +177,6 @@ def register():
 @app.route('/confirm_register', methods=['POST', 'GET'])
 def confirm_register():
     if request.method == 'POST': 
-        # debug 
-        print('[confirm_register] %s' % (request.form))
-
       
         auth = Auth(request.form.get('register_email'), request.form.get('register_password'))
 
@@ -189,24 +190,19 @@ def confirm_register():
                 return render_template('info.html', info='You have already registered')
 
      
-        # Filter out just the character IDs. 
-        character_ids = []
-        for c in session['characters']:
-            character_ids.append(int(c))
-
-        print('IDS', character_ids)
-
 
         # Add the user to the db and generate the password hash.
         user = User(email=request.form.get('register_email'), 
-                    password=auth.pw_hash)
+                    password=auth.pw_hash,
+                    api_key_id=session['api_key_id'],
+                    api_code=session['api_code'])
      
         db.session.add(user)
         db.session.commit()
 
         
         for c in session['characters']:
-            db.session.add(Character(api_id=c, user=user))
+            db.session.add(Character(character_id=c, user=user))
             db.session.commit() 
 
 
