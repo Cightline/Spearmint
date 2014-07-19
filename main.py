@@ -8,7 +8,8 @@ from flask import Flask, render_template, request, redirect, session, url_for, \
                   escape, Response
 
 from flask.ext.sqlalchemy import SQLAlchemy
-from flask.ext.login      import LoginManager, login_user, current_user, login_required
+from flask.ext.login      import LoginManager, login_user, logout_user, current_user, \
+                                 login_required
 
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -139,6 +140,13 @@ def login():
 
     return render_template('login.html')
 
+@app.route('/logout', methods=['POST', 'GET'])
+def logout():
+    if current_user.is_authenticated():
+        logout_user()
+        return render_template('info.html', info='Successfully logged out')
+
+    return render_template('info.html', info='You are not logged in')
 
 @app.route('/')
 def index():
@@ -237,6 +245,7 @@ def pi_lookup_form():
 
 
 @app.route('/pi_lookup', methods=['GET'])
+@login_required
 def pi_lookup():
     utils = Utils()
     pi    = Pi()
