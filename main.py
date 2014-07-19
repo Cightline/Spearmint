@@ -8,7 +8,7 @@ from flask import Flask, render_template, request, redirect, session, url_for, \
                   escape, Response
 
 from flask.ext.sqlalchemy import SQLAlchemy
-from flask.ext.login      import LoginManager, login_user, current_user
+from flask.ext.login      import LoginManager, login_user, current_user, login_required
 
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -30,6 +30,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = str(config.get('database', 'uri'))
 db = SQLAlchemy(app)
 
 login_manager  = LoginManager()
+login_manager.login_view = 'login'
 login_manager.init_app(app)
 
 CORP_ID = int(config.get('corp', 'id'))
@@ -60,13 +61,30 @@ class User(db.Model):
     password   = db.Column(db.String(255))
     api_code   = db.Column(db.String(255))
     api_key_id = db.Column(db.String(255))
+    is_active  = db.Column(db.Boolean)
     characters = db.relationship('Character', backref='user', lazy='dynamic')
 
 
+    def is_active(self):
+        #return self.is_active
+        return True
 
+
+    def is_authenticated(self):
+        return True
+
+    def is_anonymous(self):
+        return False
+
+    def get_id(self):
+        return self.email
+
+    def __unicode__(self):
+        return self.email
 
 db.create_all()
 db.session.commit()
+
 
 def check_auth(email, password):
     query = User.query.filter_by(email=email).first()
@@ -86,26 +104,20 @@ def check_auth(email, password):
 
     return False
 
-def authenticate():
-    return render_template('login.html')
-    #return Response('Could not verify your access level for that URL. \n'
-    #                'You have to login with proper credentials', 401, {'WWW-Authenticate':'Basic realm="Services Login Required"'})
-
 
 def requires_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        auth = request.authorization
-        if not auth or not check_auth(auth.username, auth.password):
-            return authenticate()
+        if not session['current_user']:
+            return redirect(url_for('login'))
 
         return f(*args, **kwargs)
 
     return decorated
 
 @login_manager.user_loader 
-def load_user(email):
-    query = User.query.filter_by(email=email).first()
+def load_user(id):
+    query = User.query.filter_by(email=id).first()
     return query or None
 
 
@@ -114,8 +126,12 @@ def login():
     if request.method == 'POST':
 
         if check_auth(request.form.get('email'), request.form.get('password')):
-            login_user(load_user(request.form.get('email')))
-            return render_template('info.html', info='Successfully logged in')
+          
+            to_login = load_user(request.form.get('email'))
+            
+            if login_user(to_login):
+                logging.info('[login] current_user: %s' % (current_user.email))
+                return render_template('info.html', info='Successfully logged in as %s'  % (to_login.email))
 
 
         else:
@@ -215,7 +231,7 @@ def confirm_register():
 
 
 @app.route('/pi_lookup_form')
-@requires_auth
+@login_required
 def pi_lookup_form():
     return render_template('pi_lookup_form.html')
 
