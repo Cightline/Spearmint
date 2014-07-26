@@ -10,10 +10,12 @@ from flask import Flask, render_template, request, redirect, session, url_for, \
 from flask.ext.login      import LoginManager, login_user, logout_user, current_user, \
                                  login_required
 
+from werkzeug.contrib.cache import SimpleCache
+
 import evelink.api
 
-from libs.utils_new import Utils
-from libs.pi_new import Pi
+from libs.utils import Utils
+from libs.pi import Pi
 from auth import Auth
 from user import db, User
 
@@ -42,6 +44,8 @@ CORP_ID = int(config.get('corp', 'id'))
 
 logging.basicConfig(filename=config.get('general', 'log_path'), level=logging.DEBUG)
 
+
+cache = SimpleCache()
 
 def check_auth(email, password):
     query = User.query.filter_by(email=email).first()
@@ -209,7 +213,14 @@ def pi_lookup():
     pi    = Pi()
 
     system = utils.search_system(request.args.get('system').strip())
-    items  = pi.lookup_prices(int(request.args.get('tier')), system=system['solarSystemID'])
+
+    # This is probably a security hole.
+    items = cache.get('%s-%s' % (request.args.get('tier'), request.args.get('system')))
+
+    # If it does not exist in the cache.
+    if not items:
+        items  = pi.lookup_prices(int(request.args.get('tier')), system=system['solarSystemID'])
+        cache.set('%s-%s' % (request.args.get('tier'), request.args.get('system')), items, timeout=10*60)
 
     keys = list(items.keys())
     keys.sort()
