@@ -1,14 +1,25 @@
-import sqlite3
-import urllib.request, urllib.error, urllib.parse
-import urllib.request, urllib.parse, urllib.error
 import xml.etree.cElementTree as ET
+
+from sqlalchemy import create_engine,  Table
+from sqlalchemy.orm import mapper, Session, load_only
+from sqlalchemy.ext.automap import automap_base
 
 from libs import utils
 
+Base = automap_base()
+
+db_path = 'sqlite:////%s/sqlite-latest.sqlite' % ('home/stealth/programming/spearmint')
+engine = create_engine(db_path, convert_unicode=True)
+
+Base.prepare(engine, reflect=True)
+
+session = Session(engine)
+
+
+
 class Pi():
     def __init__(self):
-        self.conn   = sqlite3.connect('sqlite-latest.sqlite')
-        self.cursor = self.conn.cursor()
+        # First int is the usual tier people use, the 2nd int is the database version
         self.tiers  = {0:3000, 1:40, 2:5, 3:3}
         self.ec_url = 'http://api.eve-central.com/api/marketstat'
         self.utils = utils.Utils()
@@ -16,20 +27,15 @@ class Pi():
                 
     def get_tiers_id(self, tier):
         ids = []
-        self.cursor.execute('select * from planetSchematicsTypeMap where quantity = ?', (self.tiers[tier],))
-        for row in self.cursor.fetchall():
-            ids.append(row[1])
 
-        return ids
+        q = session.query(Base.classes.planetSchematicsTypeMap).filter_by(quantity=self.tiers[tier])
+
+        for row in q.all():
+            ids.append(row.typeID)
+
+
+        return ids 
          
-    def lookup_name(self, id_, multiple=False):
-        self.cursor.execute('select typeName from invTypes where typeID = ?', (id_,))
-
-        if multiple:
-            return self.cursor.fetchall()
-
-        return self.cursor.fetchone()
-
 
     def lookup_prices(self, tier, region=None, system=30000142):
         ids    = self.get_tiers_id(tier)
@@ -45,7 +51,7 @@ class Pi():
 
             for b in root.iter('buy'):
                 maximum = b.find('max').text
-                prices[float(maximum)] = self.lookup_name(i)
+                prices[float(maximum)] = self.utils.lookup_typeName(i)['typeName']
                 break
                 
         return prices
@@ -53,7 +59,7 @@ class Pi():
     
 
 if __name__ == "__main__":
-    p = PI()
+    p = Pi()
     items = p.lookup_prices(2)
 
     items_sorted = list(items.keys())

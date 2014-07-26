@@ -1,14 +1,23 @@
-import sqlite3
 import urllib.request
 import urllib.error
 import urllib.parse
 import xml.etree.cElementTree as ET
 
+from sqlalchemy import create_engine, or_
+from sqlalchemy.orm import Session
+from sqlalchemy.ext.automap import automap_base
+
+Base = automap_base()
+db_path = 'sqlite:////%s/sqlite-latest.sqlite' % ('home/stealth/programming/spearmint')
+engine  = create_engine(db_path, convert_unicode=True)
+
+Base.prepare(engine, reflect=True)
+
+session = Session(engine)
+
 class Utils():
     def __init__(self):
-        self.conn   = sqlite3.connect('sqlite-latest.sqlite')
-        self.cursor = self.conn.cursor()
-
+        pass
 
     def request(self, url, data):
         d = urllib.parse.urlencode(data)
@@ -18,21 +27,23 @@ class Utils():
         return urllib.request.urlopen(r)
 
 
-    def id_to_name(self, id_, multiple=False):
-        self.cursor.execute('select typeName from invTypes where typeId = ?', (id_))
-        if multiple:
-            return self.cursor.fetchall()
+    def lookup_typeName(self, id):
+        #Base.classes.invTypes is the table, typeName is the column
+        q = session.query(Base.classes.invTypes.typeName).filter_by(typeID=id)
 
-        return self.cursor.fetchone()
+        return {'typeName':q.first().typeName} or None
 
     
     def search_station(self, query):
         self.cursor.execute('select stationName,stationId from staStations where stationName like ?', ('%'+query+'%',))
         return self.cursor.fetchall()
 
-    def search_system(self, query):
-        self.cursor.execute('select solarSystemName,solarSystemID from mapSolarSystems where solarSystemName like ?', ('%'+query+'%',))
-        return self.cursor.fetchall()
+    def search_system(self, name):
+        q = session.query(Base.classes.mapSolarSystems).filter(
+            Base.classes.mapSolarSystems.solarSystemName.like(name))
+       
+        result = q.first()
+        return {'solarSystemName':result.solarSystemName, 'solarSystemID':result.solarSystemID} or None
 
     def search_item(self, query):
         self.cursor.execute('select typeName,typeId from invTypes where typeName like ?', ('%'+query+'%',))

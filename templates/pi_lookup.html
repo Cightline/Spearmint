@@ -28,7 +28,8 @@
                 {% for key in keys %}
 
                 <tr>
-                <td>{{ items[key][0].lower() }}</td> 
+                {# key is the price, the value is the item name #}
+                <td>{{ items[key].lower() }} </td>
                 <td>{{ key }}</td>
                 </tr>
 

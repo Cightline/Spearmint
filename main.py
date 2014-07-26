@@ -7,16 +7,16 @@ from functools import wraps
 from flask import Flask, render_template, request, redirect, session, url_for, \
                   escape, Response
 
-from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.login      import LoginManager, login_user, logout_user, current_user, \
                                  login_required
 
-from werkzeug.security import generate_password_hash, check_password_hash
-
-from libs.utils import Utils
-from libs.pi    import Pi
-
 import evelink.api
+
+from libs.utils_new import Utils
+from libs.pi_new import Pi
+from auth import Auth
+from user import db, User
+
 
 config = configparser.ConfigParser()
 config.read('%s/settings.cfg' % (os.getcwd()))
@@ -25,10 +25,14 @@ config.read('%s/settings.cfg' % (os.getcwd()))
 eve = evelink.eve.EVE()
 
 app = Flask(__name__)
+
 app.config['DEBUG'] = True
 app.config['SECRET_KEY'] = config.get('general', 'secret-key')
 app.config['SQLALCHEMY_DATABASE_URI'] = str(config.get('database', 'uri'))
-db = SQLAlchemy(app)
+
+db.init_app(app)
+
+
 
 login_manager  = LoginManager()
 login_manager.login_view = 'login'
@@ -37,54 +41,6 @@ login_manager.init_app(app)
 CORP_ID = int(config.get('corp', 'id'))
 
 logging.basicConfig(filename=config.get('general', 'log_path'), level=logging.DEBUG)
-
-
-class Auth(object):
-    def __init__(self, username, password):
-        self.username = username
-        self.set_password(password)
-
-    def set_password(self, password):
-        self.pw_hash = generate_password_hash(password)
-
-    def check_password(self, password):
-        return check_password_hash(self.pw_hash, password)
-
-
-class Character(db.Model):
-    id           = db.Column(db.Integer, primary_key=True)
-    character_id = db.Column(db.Integer)
-    user_id      = db.Column(db.Integer, db.ForeignKey('user.id'))
-
-class User(db.Model):
-    id         = db.Column(db.Integer, primary_key=True)
-    email      = db.Column(db.String(120), unique=True)
-    password   = db.Column(db.String(255))
-    api_code   = db.Column(db.String(255))
-    api_key_id = db.Column(db.String(255))
-    is_active  = db.Column(db.Boolean)
-    characters = db.relationship('Character', backref='user', lazy='dynamic')
-
-
-    def is_active(self):
-        #return self.is_active
-        return True
-
-
-    def is_authenticated(self):
-        return True
-
-    def is_anonymous(self):
-        return False
-
-    def get_id(self):
-        return self.email
-
-    def __unicode__(self):
-        return self.email
-
-db.create_all()
-db.session.commit()
 
 
 def check_auth(email, password):
@@ -140,6 +96,7 @@ def login():
 
     return render_template('login.html')
 
+
 @app.route('/logout', methods=['POST', 'GET'])
 def logout():
     if current_user.is_authenticated():
@@ -147,6 +104,7 @@ def logout():
         return render_template('info.html', info='Successfully logged out')
 
     return render_template('info.html', info='You are not logged in')
+
 
 @app.route('/')
 def index():
@@ -251,14 +209,13 @@ def pi_lookup():
     pi    = Pi()
 
     system = utils.search_system(request.args.get('system').strip())
-    items  = pi.lookup_prices(int(request.args.get('tier')),
-                                  system=system[0][1])
+    items  = pi.lookup_prices(int(request.args.get('tier')), system=system['solarSystemID'])
 
     keys = list(items.keys())
     keys.sort()
     keys.reverse()
 
-    return render_template('pi_lookup.html', system=system[0][0],
+    return render_template('pi_lookup.html', system=system['solarSystemName'],
                                              tier=request.args.get('tier'),
                                              keys=keys,
                                              items=items)
