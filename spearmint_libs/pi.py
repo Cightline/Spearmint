@@ -4,7 +4,7 @@ from sqlalchemy import create_engine,  Table
 from sqlalchemy.orm import mapper, Session, load_only
 from sqlalchemy.ext.automap import automap_base
 
-from libs import utils
+from spearmint_libs import utils
 
 
 

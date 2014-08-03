@@ -17,10 +17,10 @@ from werkzeug.contrib.cache import SimpleCache
 
 import evelink.api
 
-from libs.utils import Utils
-from libs.pi import Pi
-from auth import Auth
-from user import db, User
+from spearmint_libs.utils import Utils
+from spearmint_libs.pi    import Pi
+from spearmint_libs.auth  import Auth
+from spearmint_libs.user  import db, User
 
 
 config = configparser.ConfigParser()
