@@ -7,28 +7,23 @@ from sqlalchemy.ext.automap import automap_base
 from spearmint_libs import utils
 
 
-
-
-
-
-
 class Pi():
-    def __init__(self):
+    def __init__(self, path_to_db):
         # First int is the usual tier people use, the 2nd int is the database version
         self.tiers  = {0:3000, 1:40, 2:5, 3:3}
         self.ec_url = 'http://api.eve-central.com/api/marketstat'
         self.utils = utils.Utils()
 
-        db_path = 'sqlite:////%s/sqlite-latest.sqlite' % ('home/stealth/programming/spearmint')
-        Base = automap_base()
-        engine = create_engine(db_path, convert_unicode=True)
-        Base.prepare(engine, reflect=True)
+        self.base = automap_base()
+        engine = create_engine(path_to_db, convert_unicode=True)
+        self.base.prepare(engine, reflect=True)
         self.session = Session(engine)
+
                 
     def get_tiers_id(self, tier):
         ids = []
 
-        q = self.session.query(Base.classes.planetSchematicsTypeMap).filter_by(quantity=self.tiers[tier])
+        q = self.session.query(self.base.classes.planetSchematicsTypeMap).filter_by(quantity=self.tiers[tier])
 
         for row in q.all():
             ids.append(row.typeID)

@@ -10,10 +10,10 @@ from sqlalchemy.ext.automap import automap_base
 
 class Utils():
     def __init__(self):
-        Base = automap_base()
+        self.base = automap_base()
         db_path = 'sqlite:////%s/sqlite-latest.sqlite' % ('home/stealth/programming/spearmint')
         engine  = create_engine(db_path, convert_unicode=True)
-        Base.prepare(engine, reflect=True)
+        self.base.prepare(engine, reflect=True)
         self.session = Session(engine)
 
 
@@ -28,7 +28,7 @@ class Utils():
 
     def lookup_typeName(self, id):
         #Base.classes.invTypes is the table, typeName is the column
-        q = self.session.query(Base.classes.invTypes.typeName).filter_by(typeID=id)
+        q = self.session.query(self.base.classes.invTypes.typeName).filter_by(typeID=id)
 
         return {'typeName':q.first().typeName} or None
 
@@ -38,8 +38,8 @@ class Utils():
         #return self.cursor.fetchall()
 
     def search_system(self, name):
-        q = self.session.query(Base.classes.mapSolarSystems).filter(
-            Base.classes.mapSolarSystems.solarSystemName.like(name))
+        q = self.session.query(self.base.classes.mapSolarSystems).filter(
+            self.base.classes.mapSolarSystems.solarSystemName.like(name))
        
         result = q.first()
 

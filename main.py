@@ -20,7 +20,7 @@ import evelink.api
 from spearmint_libs.utils import Utils
 from spearmint_libs.pi    import Pi
 from spearmint_libs.auth  import Auth
-from spearmint_libs.user  import db, User
+from spearmint_libs.user  import db, User, Character
 
 
 config = configparser.ConfigParser()
@@ -32,12 +32,14 @@ eve = evelink.eve.EVE()
 app = Flask(__name__)
 
 #app.config['DEBUG'] = True
+
+
+ccp_db_path = str(config.get('database',  'ccp_dump'))
+
 app.config['SECRET_KEY'] = config.get('general', 'secret-key')
 app.config['SQLALCHEMY_DATABASE_URI'] = str(config.get('database', 'uri'))
 
 db.init_app(app)
-
-
 
 login_manager  = LoginManager()
 login_manager.login_view = 'login'
@@ -47,8 +49,8 @@ CORP_ID = int(config.get('corp', 'id'))
 
 logging.basicConfig(filename=config.get('general', 'log_path'), level=logging.DEBUG)
 
-
 cache = SimpleCache()
+
 
 class RegisterForm(Form):
     keyid = TextField('KeyID')
@@ -223,7 +225,7 @@ def pi_lookup_form():
 @login_required
 def pi_lookup():
     utils = Utils()
-    pi    = Pi()
+    pi    = Pi(ccp_db_path)
 
     system = utils.search_system(request.args.get('system').strip())
 
