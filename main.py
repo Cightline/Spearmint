@@ -224,7 +224,7 @@ def pi_lookup_form():
 @app.route('/pi_lookup', methods=['GET'])
 @login_required
 def pi_lookup():
-    utils = Utils()
+    utils = Utils(ccp_db_path)
     pi    = Pi(ccp_db_path)
 
     system = utils.search_system(request.args.get('system').strip())
