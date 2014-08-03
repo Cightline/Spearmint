@@ -43,7 +43,12 @@ class Utils():
             Base.classes.mapSolarSystems.solarSystemName.like(name))
        
         result = q.first()
-        return {'solarSystemName':result.solarSystemName, 'solarSystemID':result.solarSystemID} or None
+
+
+        if result:
+            return {'solarSystemName':result.solarSystemName, 'solarSystemID':result.solarSystemID} 
+
+        return None
 
     def search_item(self, query):
         self.cursor.execute('select typeName,typeId from invTypes where typeName like ?', ('%'+query+'%',))

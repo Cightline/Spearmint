@@ -6,12 +6,12 @@
     <h3>Register</h3>
     <br>
     <div class="form-group">
-        <label for="register_keyid">Key ID</label>
-        <input type="text" class="form-control" id="register_keyid" name="register_keyid">
+        <label for="keyid">KeyID</label>
+        {{ form.keyid(class="form-control") }}
     </div>
     <div class="form-group">
-        <label for="register_code">Code</label>
-        <input type="text" class="form-control" id="register_code" name="register_code">
+        <label for="code">Code</label>
+        {{ form.code(class="form-control") }}
     </div>
     <button type="submit" class="btn btn-default" value="submit">Submit</button>
 

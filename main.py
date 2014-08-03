@@ -10,6 +10,9 @@ from flask import Flask, render_template, request, redirect, session, url_for, \
 from flask.ext.login      import LoginManager, login_user, logout_user, current_user, \
                                  login_required
 
+from flask_wtf import Form, RecaptchaField
+from wtforms import TextField
+
 from werkzeug.contrib.cache import SimpleCache
 
 import evelink.api
@@ -28,7 +31,7 @@ eve = evelink.eve.EVE()
 
 app = Flask(__name__)
 
-app.config['DEBUG'] = True
+#app.config['DEBUG'] = True
 app.config['SECRET_KEY'] = config.get('general', 'secret-key')
 app.config['SQLALCHEMY_DATABASE_URI'] = str(config.get('database', 'uri'))
 
@@ -46,6 +49,14 @@ logging.basicConfig(filename=config.get('general', 'log_path'), level=logging.DE
 
 
 cache = SimpleCache()
+
+class RegisterForm(Form):
+    keyid = TextField('KeyID')
+    code  = TextField('Code')
+
+
+    recaptcha = RecaptchaField()
+
 
 def check_auth(email, password):
     query = User.query.filter_by(email=email).first()
@@ -122,7 +133,7 @@ def register():
 
         logging.info('[register] request.form: %s' % (request.form))
 
-        api = evelink.api.API(api_key=(request.form.get('register_keyid'), request.form.get('register_code')))
+        api = evelink.api.API(api_key=(request.form.get('keyid'), request.form.get('code')))
         account = evelink.account.Account(api)
 
         try:
@@ -156,8 +167,10 @@ def register():
             else:
                 return render_template('info.html', info='None of your characters are in the corporation')
 
-
-    return render_template('register.html')
+    
+    
+    
+    return render_template('register.html', form=RegisterForm())
 
 
 @app.route('/confirm_register', methods=['POST', 'GET'])
@@ -213,6 +226,9 @@ def pi_lookup():
     pi    = Pi()
 
     system = utils.search_system(request.args.get('system').strip())
+
+    if not system:
+        return render_template('info.html', info='Could not find system %s' % (request.args.get('system')))
 
     # This is probably a security hole.
     items = cache.get('%s-%s' % (request.args.get('tier'), request.args.get('system')))
