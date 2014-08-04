@@ -15,7 +15,7 @@
                 <tr>
                 {# key is the price, the value is the item name #}
                 <td>{{ item.item }} </td>
-                <td>{{ item.price }} </td>
+                <td>{{ '%.2f' % item.price }} </td>
                 </tr>
 
                 {% endfor %}
