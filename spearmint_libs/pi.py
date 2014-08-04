@@ -50,8 +50,11 @@ class Pi():
         q = self.session.query(self.base.classes.planetSchematicsTypeMap).filter_by(quantity=self.tiers[tier])
 
         for row in q.all():
-            ids.append(row.typeID)
-
+            to_append = row.typeID
+            # Prevent duplicates
+            if to_append not in ids:
+                ids.append(to_append)
+        
         return ids 
 
     def get_prices(self, tier, system):
@@ -91,6 +94,7 @@ class Pi():
             print('iteration: ', iteration)
 
         for i in ids:
+            item = self.utils.lookup_typeName(i)['typeName']
             data = {'typeid':i, 'usesystem':system}
             page = self.utils.request(self.ec_url, data)
 
@@ -102,14 +106,15 @@ class Pi():
 
             for b in root.iter('buy'):
                 maximum = b.find('max').text
-
+                
                 to_store = StorePi(tier=tier, 
                                    price=maximum, 
-                                   item=self.utils.lookup_typeName(i)['typeName'], 
                                    system=system,
+                                   item=item,
                                    date=time,
                                    iteration=iteration) 
 
+                print(item)
                 store_session.add(to_store)
                 store_session.commit()
                 
