@@ -236,7 +236,7 @@ def pi_statistics(tier):
             results[system['solarSystemName']] = data
 
 
-    return render_template('pi_lookup.html', results=results)
+    return render_template('pi_statistics.html', results=results)
 
 
     
