@@ -14,7 +14,7 @@ class Utils():
         engine  = create_engine(ccp_db_path, convert_unicode=True)
         self.base.prepare(engine, reflect=True)
         self.session = Session(engine)
-
+        #self.session = ccp_db_session
 
 
     def request(self, url, data):

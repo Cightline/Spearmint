@@ -27,12 +27,6 @@ from spearmint_libs.user  import db, User, Character
 config = configparser.ConfigParser()
 config.read('%s/settings.cfg' % (os.getcwd()))
 
-# The function creates a new Celery object, configures it with the broker 
-# from the application config, updates the rest of the Celery config from 
-# the Flask config and then creates a subclass of the task that wraps the 
-# task execution in an application context.
-
-
 eve = evelink.eve.EVE()
 
 app = Flask('spearmint')
@@ -56,7 +50,12 @@ CORP_ID = int(config.get('corp', 'id'))
 
 logging.basicConfig(filename=config.get('general', 'log_path'), level=logging.DEBUG)
 
+
+
 cache = SimpleCache()
+utils = Utils(ccp_db_path)
+pi    = Pi(ccp_db_path, pi_db_path, utils)
+
 
 
 class RegisterForm(Form):
@@ -225,9 +224,6 @@ def confirm_register():
 
 @app.route('/pi_statistics/<int:tier>', methods=['GET', 'POST'])
 def pi_statistics(tier):
-    pi = Pi(ccp_db_path, pi_db_path)
-    utils = Utils(ccp_db_path)
-
 
     results = {}
     systems = ['jita', 'amarr']
