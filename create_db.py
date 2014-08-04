@@ -6,5 +6,5 @@ with main.app.app_context():
 
 from spearmint_libs import pi
 print('pi_db_path: ',main.pi_db_path)
-p = pi.Pi(main.ccp_db_path, main.pi_db_path)
+p = pi.Pi(main.ccp_db_path, main.pi_db_path, main.utils)
 pi.Base.metadata.create_all(p.store_engine)

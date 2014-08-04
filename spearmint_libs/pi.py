@@ -2,7 +2,7 @@ import xml.etree.cElementTree as ET
 import os
 import datetime
 
-from sqlalchemy import create_engine,  Table, Column, Integer, String, Date
+from sqlalchemy import create_engine,  Table, Column, Integer, String, Time
 from sqlalchemy.orm import mapper, Session, load_only, sessionmaker
 from sqlalchemy.ext.automap import automap_base
 
@@ -23,7 +23,7 @@ class StorePi(Base):
     item   = Column(String(50))
     tier   = Column(Integer)
     price  = Column(Integer)
-    date   = Column(Date)
+    date   = Column(String(100))
 
 
 
@@ -94,6 +94,8 @@ class Pi():
       
             print('iteration: ', iteration)
 
+        date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print(date)
         for i in ids:
             item = self.utils.lookup_typeName(i)['typeName']
             data = {'typeid':i, 'usesystem':system}
@@ -102,9 +104,7 @@ class Pi():
             tree = ET.parse(page)
             root = tree.getroot()
             
-            time = datetime.datetime.now()
             
-
             for b in root.iter('buy'):
                 maximum = b.find('max').text
                 
@@ -112,7 +112,7 @@ class Pi():
                                    price=maximum, 
                                    system=system,
                                    item=item,
-                                   date=time,
+                                   date=date,
                                    iteration=iteration) 
 
                 print(item)

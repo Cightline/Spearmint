@@ -6,6 +6,8 @@
     <div class="col-md-8">
             {% for r in results.keys() %}
             <h1>{{ r }}</h1>
+            {# We just need one "date" #}
+            <h5>Cached at: {{ results[r][0].date }}</h5>
             <table class="table table-striped">
                 <th>Item</th>
                 <th>Highest buy order</th>
