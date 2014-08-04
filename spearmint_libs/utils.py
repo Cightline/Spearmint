@@ -11,7 +11,7 @@ from sqlalchemy.ext.automap import automap_base
 class Utils():
     def __init__(self, ccp_db_path):
         self.base = automap_base()
-        engine  = create_engine(db_path, convert_unicode=True)
+        engine  = create_engine(ccp_db_path, convert_unicode=True)
         self.base.prepare(engine, reflect=True)
         self.session = Session(engine)
 

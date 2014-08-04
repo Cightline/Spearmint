@@ -15,6 +15,7 @@ from wtforms import TextField
 
 from werkzeug.contrib.cache import SimpleCache
 
+
 import evelink.api
 
 from spearmint_libs.utils import Utils
@@ -26,17 +27,23 @@ from spearmint_libs.user  import db, User, Character
 config = configparser.ConfigParser()
 config.read('%s/settings.cfg' % (os.getcwd()))
 
+# The function creates a new Celery object, configures it with the broker 
+# from the application config, updates the rest of the Celery config from 
+# the Flask config and then creates a subclass of the task that wraps the 
+# task execution in an application context.
+
 
 eve = evelink.eve.EVE()
 
-app = Flask(__name__)
+app = Flask('spearmint')
 
 #app.config['DEBUG'] = True
 
 
 ccp_db_path = str(config.get('database',  'ccp_dump'))
+pi_db_path  = str(config.get('database',  'pi_db'))
 
-app.config['SECRET_KEY'] = config.get('general', 'secret-key')
+app.config['SECRET_KEY']              = config.get('general', 'secret-key')
 app.config['SQLALCHEMY_DATABASE_URI'] = str(config.get('database', 'uri'))
 
 db.init_app(app)
@@ -88,6 +95,7 @@ def requires_auth(f):
         return f(*args, **kwargs)
 
     return decorated
+
 
 @login_manager.user_loader 
 def load_user(id):
@@ -215,42 +223,27 @@ def confirm_register():
     return render_template('confirm_register.html', characters=session['characters'])
 
 
-@app.route('/pi_lookup_form')
-@login_required
-def pi_lookup_form():
-    return render_template('pi_lookup_form.html')
-
-
-@app.route('/pi_lookup', methods=['GET'])
-@login_required
-def pi_lookup():
+@app.route('/pi_statistics/<int:tier>', methods=['GET', 'POST'])
+def pi_statistics(tier):
+    pi = Pi(ccp_db_path, pi_db_path)
     utils = Utils(ccp_db_path)
-    pi    = Pi(ccp_db_path)
-
-    system = utils.search_system(request.args.get('system').strip())
-
-    if not system:
-        return render_template('info.html', info='Could not find system %s' % (request.args.get('system')))
-
-    # This is probably a security hole.
-    items = cache.get('%s-%s' % (request.args.get('tier'), request.args.get('system')))
-
-    # If it does not exist in the cache.
-    if not items:
-        items  = pi.lookup_prices(int(request.args.get('tier')), system=system['solarSystemID'])
-        cache.set('%s-%s' % (request.args.get('tier'), request.args.get('system')), items, timeout=10*60)
-
-    keys = list(items.keys())
-    keys.sort()
-    keys.reverse()
-
-    return render_template('pi_lookup.html', system=system['solarSystemName'],
-                                             tier=request.args.get('tier'),
-                                             keys=keys,
-                                             items=items)
 
 
+    results = {}
+    systems = ['jita', 'amarr']
 
+    for system_name in systems:
+        system = utils.search_system(system_name)
+        data = pi.get_prices(tier, system['solarSystemID'])
+
+        if data:
+            results[system['solarSystemName']] = data
+
+
+    return render_template('pi_lookup.html', results=results)
+
+
+    
 
 
 

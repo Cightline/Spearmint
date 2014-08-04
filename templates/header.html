@@ -5,7 +5,7 @@
 
 {# Used to show the "active" tab #}
 
-{% set navigation_bar = [('/pi_lookup_form', 'PI'),] -%}
+{% set navigation_bar = [('/misc', 'Misc'),] -%}
 {% set active_page = request.endpoint|default('/') -%}
 
 
@@ -32,6 +32,15 @@
                     <li><a href="/register">Register</a></li>
                     <li><a href="/logout">Logout</a></li>
                 </ul>
+          </li>
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">PI<span class="caret"></span></a>
+                <ul class="dropdown-menu" role="menu">
+                    <li><a href="/pi_statistics/1">Tier 1</a></li>
+                    <li><a href="/pi_statistics/2">Tier 2</a></li>
+                    <li><a href="/pi_statistics/3">Tier 3</a></li>
+                </ul>
+          </li>
 
           {% for href, name in navigation_bar %}
           <li {% if href == active_page %} class="active" {% endif %}><a href="{{ href }}" role="tab">{{ name }}</a></li>
