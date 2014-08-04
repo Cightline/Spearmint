@@ -29,7 +29,7 @@ config.read('%s/settings.cfg' % (os.getcwd()))
 
 eve = evelink.eve.EVE()
 
-app = Flask('spearmint')
+app = Flask(__name__)
 
 #app.config['DEBUG'] = True
 

@@ -45,6 +45,7 @@ class Pi():
 
                 
     def get_tiers_id(self, tier):
+        # Returns the typeIDs associated with PI, from the given tier.
         ids = []
 
         q = self.session.query(self.base.classes.planetSchematicsTypeMap).filter_by(quantity=self.tiers[tier])
@@ -61,7 +62,7 @@ class Pi():
         Session = sessionmaker(bind=self.store_engine)
         store_session = Session()
 
-        query =  store_session.query(StorePi).filter_by(system=system, tier=tier).order_by(StorePi.iteration.asc()).first() or None
+        query =  store_session.query(StorePi).filter_by(system=system, tier=tier).order_by(StorePi.iteration.desc()).first() or None
 
         if query:
             iteration = query.iteration
