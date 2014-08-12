@@ -1,0 +1,45 @@
+{% include 'header.html' %}
+{% include 'datatables.html' %}
+
+<script type="text/javascript">
+$(document).ready( function() {
+      $('#table').dataTable( { "iDisplayLength": 100 } ); } )
+</script>
+
+<div class="container-fluid">
+
+<div class="row">
+    <div class="col-md-12">
+            {# We just need one "date" #}
+            <table class="display" id="table">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th class="text-right">Action</th>
+                        <th class="text-right">Price</th>
+                        <th class="text-right">Quantity</th>
+                        <th class="text-right">Total</th>
+                        <th class="text-right">Station</th>
+                        <th class="text-right">Character</th>
+                    </tr>
+                        
+                </thead>
+                <tbody>
+                {% for row in wallet_transactions[0] %}
+
+                    <tr>
+                        {# key is the price, the value is the item name #}
+                        <td> {{ row['type']['name'] }}     </td>
+                        <td class="text-rigth"> {{ row['action'] }}           </td>
+                        <td class="text-right"> {{ '%.2f' % (row['price']) }} </td>
+                        <td class="text-right"> {{ row['quantity'] }}         </td>
+                        <td class="text-right"> {{ '%.2f' % (row['quantity'] * row['price']) }} </td>
+                        <td class="text-right"> {{ row['station']['name'] }}  </td>
+                        <td class="text-right"> {{ row['char']['name'] }}     </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

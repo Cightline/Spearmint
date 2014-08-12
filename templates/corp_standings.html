@@ -12,24 +12,21 @@ $(document).ready( function() {
     <div class="col-md-4">
             {# We just need one "date" #}
             <table class="display" id="table">
-            {% for r in results.keys() %}
                 <thead>
                     <tr>
-                        <th>Item</th>
-                        <th class="text-right">Highest buy order</th>
+                        <th>Faction</th>
+                        <th class="text-right">Standing</th>
                     </tr>
                         
                 </thead>
                 <tbody>
-                    {% for item in results[r] %}
-      
+                {% for r in standings[0]['factions'].values() %}
                     <tr>
                         {# key is the price, the value is the item name #}
-                        <td>{{ item.item }} </td>
-                        <td>{{ '%.2f' % item.price }} </td>
+                        <td>{{ r['name'] }}</td>
+                        <td>{{ '%.2f' % (r['standing']) }}</td>
                     </tr>
                 {% endfor %}
-            {% endfor %}
                 </tbody>
             </table>
         </div>

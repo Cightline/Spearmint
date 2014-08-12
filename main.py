@@ -27,15 +27,19 @@ from spearmint_libs.user  import db, User, Character
 config = configparser.ConfigParser()
 config.read('%s/settings.cfg' % (os.getcwd()))
 
-eve = evelink.eve.EVE()
 
+eve = evelink.eve.EVE()
 app = Flask(__name__)
 
 #app.config['DEBUG'] = True
 
 
-ccp_db_path = str(config.get('database',  'ccp_dump'))
-pi_db_path  = str(config.get('database',  'pi_db'))
+ccp_db_path = config.get('database',  'ccp_dump')
+pi_db_path  = config.get('database',  'pi_db')
+
+# Setup the corp api 
+corp_api = evelink.api.API(api_key=(config.get('corp_api', 'key'), config.get('corp_api', 'code')))
+corp     = evelink.corp.Corp(corp_api)
 
 app.config['SECRET_KEY']              = config.get('general', 'secret-key')
 app.config['SQLALCHEMY_DATABASE_URI'] = str(config.get('database', 'uri'))
@@ -226,7 +230,7 @@ def confirm_register():
 def pi_statistics(tier):
 
     results = {}
-    systems = ['jita', 'amarr']
+    systems = ['jita']
 
     for system_name in systems:
         system = utils.search_system(system_name)
@@ -239,7 +243,20 @@ def pi_statistics(tier):
     return render_template('pi_statistics.html', results=results)
 
 
+@app.route('/corp', methods=['GET'])
+def corp_index():
+    return render_template('corp_index.html')
+
+
+@app.route('/corp/standings', methods=['GET'])
+def corp_standings():
+
+    return render_template('corp_standings.html', standings=corp.npc_standings())
     
+@app.route('/corp/wallet_transactions',  methods=['GET'])
+def corp_transactions():
+
+    return render_template('corp_transactions.html', wallet_transactions=corp.wallet_transactions())
 
 
 
