@@ -37,12 +37,10 @@ app = Flask(__name__)
 ccp_db_path = config.get('database',  'ccp_dump')
 pi_db_path  = config.get('database',  'pi_db')
 
-# Setup the corp api 
-corp_api = evelink.api.API(api_key=(config.get('corp_api', 'key'), config.get('corp_api', 'code')))
-corp     = evelink.corp.Corp(corp_api)
-
 app.config['SECRET_KEY']              = config.get('general', 'secret-key')
 app.config['SQLALCHEMY_DATABASE_URI'] = str(config.get('database', 'uri'))
+
+CORP_ID = int(config.get('corp', 'id'))
 
 db.init_app(app)
 
@@ -50,16 +48,15 @@ login_manager  = LoginManager()
 login_manager.login_view = 'login'
 login_manager.init_app(app)
 
-CORP_ID = int(config.get('corp', 'id'))
-
 logging.basicConfig(filename=config.get('general', 'log_path'), level=logging.DEBUG)
-
-
 
 cache = SimpleCache()
 utils = Utils(ccp_db_path)
 pi    = Pi(ccp_db_path, pi_db_path, utils)
 
+# Setup the corp api object
+corp_api = evelink.api.API(api_key=(config.get('corp_api', 'key'), config.get('corp_api', 'code')))
+corp     = evelink.corp.Corp(corp_api)
 
 
 class RegisterForm(Form):
@@ -69,36 +66,18 @@ class RegisterForm(Form):
 
     recaptcha = RecaptchaField()
 
-
 def check_auth(email, password):
     query = User.query.filter_by(email=email).first()
-
     if query:
         a = Auth(email, password)
-       
         if a.check_password(password):
             logging.info('[check_auth] user: %s logged in' % (query.email))
             return True
-
         else:
             logging.info('[check_auth] incorrect password for: %s' % (query.email))
-
     else:
         logging.info("[check_auth] couldn't find %s for authentication" % (email))
-
     return False
-
-
-def requires_auth(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if not session['current_user']:
-            return redirect(url_for('login'))
-
-        return f(*args, **kwargs)
-
-    return decorated
-
 
 @login_manager.user_loader 
 def load_user(id):
@@ -117,7 +96,6 @@ def login():
             if login_user(to_login):
                 logging.info('[login] current_user: %s' % (current_user.email))
                 return render_template('info.html', info='Successfully logged in as %s'  % (to_login.email))
-
 
         else:
             return render_template('info.html', info='Incorrect email/password combination')
@@ -244,16 +222,20 @@ def pi_statistics(tier):
 
 
 @app.route('/corp', methods=['GET'])
+@login_required
 def corp_index():
     return render_template('corp_index.html')
 
 
 @app.route('/corp/standings', methods=['GET'])
+@login_required
 def corp_standings():
 
     return render_template('corp_standings.html', standings=corp.npc_standings())
-    
+
+
 @app.route('/corp/wallet_transactions',  methods=['GET'])
+@login_required
 def corp_transactions():
 
     return render_template('corp_transactions.html', wallet_transactions=corp.wallet_transactions())
