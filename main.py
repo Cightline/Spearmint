@@ -72,7 +72,7 @@ def check_auth(email, password):
     if query:
         a = Auth(email, password)
         if a.check_password(password):
-            logging.info('[check_auth] user: %s logged in' % (query.email))
+            logging.info('[check_auth] correct password for: %s' % (query.email))
             return True
         else:
             logging.info('[check_auth] incorrect password for: %s' % (query.email))
@@ -134,7 +134,6 @@ def register():
             logging.warning('[register] exception: %s' % (ex))
             return render_template('info.html', info="It dosen't seem like you correctly entered your API")
 
-
         if characters.result:
             # Store in seperate dictionary so I can edit it. 
             char_copy = copy.deepcopy(characters.result)
@@ -158,9 +157,6 @@ def register():
 
             else:
                 return render_template('info.html', info='None of your characters are in the corporation')
-
-    
-    
     
     return render_template('register.html', form=RegisterForm())
 
@@ -180,8 +176,6 @@ def confirm_register():
             if request.form.get('register_email') == query.email:
                 return render_template('info.html', info='You have already registered')
 
-     
-
         # Add the user to the db and generate the password hash.
         user = User(email=request.form.get('register_email'), 
                     password=auth.pw_hash,
@@ -196,11 +190,7 @@ def confirm_register():
             db.session.add(Character(character_id=c, user=user))
             db.session.commit() 
 
-
-
         return render_template('submitted_register.html')
-
-
 
     return render_template('confirm_register.html', characters=session['characters'])
 
@@ -218,7 +208,6 @@ def pi_statistics(tier):
         if data:
             results[system['solarSystemName']] = data
 
-
     return render_template('pi_statistics.html', results=results)
 
 
@@ -231,16 +220,13 @@ def corp_index():
 @app.route('/corp/standings', methods=['GET'])
 @login_required
 def corp_standings():
-
     return render_template('corp_standings.html', standings=corp.npc_standings())
 
 
 @app.route('/corp/wallet_transactions',  methods=['GET'])
 @login_required
 def corp_transactions():
-
     return render_template('corp_transactions.html', wallet_transactions=corp.wallet_transactions())
-
 
 
 if __name__ == '__main__':
