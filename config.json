@@ -1,0 +1,18 @@
+{
+    "general":{
+        "log_path":"log"
+
+    },
+
+    "database":{
+        "uri":"sqlite:////home/stealth/programming/spearmint/user_data.db",
+        "ccp_dump":"sqlite:////home/stealth/programming/spearmint/sqlite-latest.sqlite",
+        "pi_db":"sqlite:////home/stealth/programming/spearmint/pi.db"
+    },
+
+    "corp_api":{
+        "code":"",
+        "key":""
+    }
+}
+         

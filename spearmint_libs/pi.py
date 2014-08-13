@@ -31,15 +31,15 @@ class StorePi(Base):
 
 
 class Pi():
-    def __init__(self, ccp_db_path, pi_db_path, utils_obj):
-        self.store_engine = create_engine(pi_db_path)
+    def __init__(self, config, utils_obj):
+        self.store_engine = create_engine(config['database']['pi_db'])
         # First int is the usual tier people use, the 2nd int is the database version
         self.tiers  = {0:3000, 1:40, 2:5, 3:3}
         self.ec_url = 'http://api.eve-central.com/api/marketstat'
         self.utils = utils_obj
 
         self.base = automap_base()
-        engine = create_engine(ccp_db_path, convert_unicode=True)
+        engine = create_engine(config['database']['ccp_dump'], convert_unicode=True)
         self.base.prepare(engine, reflect=True)
         self.session = Session(engine)
 

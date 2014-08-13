@@ -9,9 +9,9 @@ from sqlalchemy.ext.automap import automap_base
 
 
 class Utils():
-    def __init__(self, ccp_db_path):
+    def __init__(self, config):
         self.base = automap_base()
-        engine  = create_engine(ccp_db_path, convert_unicode=True)
+        engine  = create_engine(config['database']['ccp_dump'], convert_unicode=True)
         self.base.prepare(engine, reflect=True)
         self.session = Session(engine)
         #self.session = ccp_db_session

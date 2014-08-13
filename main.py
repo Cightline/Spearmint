@@ -2,13 +2,12 @@ import configparser
 import os
 import logging
 import copy
+import json
 from functools import wraps
 
-from flask import Flask, render_template, request, redirect, session, url_for, \
-                  escape, Response
+from flask import Flask, render_template, request, redirect, session, url_for, escape, Response
 
-from flask.ext.login      import LoginManager, login_user, logout_user, current_user, \
-                                 login_required
+from flask.ext.login import LoginManager, login_user, logout_user, current_user, login_required
 
 from flask_wtf import Form, RecaptchaField
 from wtforms import TextField
@@ -24,23 +23,23 @@ from spearmint_libs.auth  import Auth
 from spearmint_libs.user  import db, User, Character
 
 
-config = configparser.ConfigParser()
-config.read('%s/settings.cfg' % (os.getcwd()))
+with open("config.json") as cfg:
+    config = json.loads(cfg.read())
+
+assert(config)
 
 
 eve = evelink.eve.EVE()
+
 app = Flask(__name__)
+app.config.update(config)
 
 #app.config['DEBUG'] = True
 
 
-ccp_db_path = config.get('database',  'ccp_dump')
-pi_db_path  = config.get('database',  'pi_db')
+app.config['SECRET_KEY']              = os.urandom(1488)
+app.config['SQLALCHEMY_DATABASE_URI'] = app.config['database']['uri']
 
-app.config['SECRET_KEY']              = config.get('general', 'secret-key')
-app.config['SQLALCHEMY_DATABASE_URI'] = str(config.get('database', 'uri'))
-
-CORP_ID = int(config.get('corp', 'id'))
 
 db.init_app(app)
 
@@ -48,15 +47,17 @@ login_manager  = LoginManager()
 login_manager.login_view = 'login'
 login_manager.init_app(app)
 
-logging.basicConfig(filename=config.get('general', 'log_path'), level=logging.DEBUG)
+logging.basicConfig(filename=app.config['general']['log_path'], level=logging.DEBUG)
 
-cache = SimpleCache()
-utils = Utils(ccp_db_path)
-pi    = Pi(ccp_db_path, pi_db_path, utils)
-
-# Setup the corp api object
-corp_api = evelink.api.API(api_key=(config.get('corp_api', 'key'), config.get('corp_api', 'code')))
+# Setup the corp api object and get the corp ID
+corp_api = evelink.api.API(api_key=(app.config['corp_api']['key'], app.config['corp_api']['code']))
 corp     = evelink.corp.Corp(corp_api)
+app.config['corp_id']  = corp.corporation_sheet()[0]['id']
+
+
+utils = Utils(app.config)
+pi    = Pi(app.config, utils)
+cache = SimpleCache()
 
 
 class RegisterForm(Form):
@@ -94,7 +95,7 @@ def login():
             to_login = load_user(request.form.get('email'))
             
             if login_user(to_login):
-                logging.info('[login] current_user: %s' % (current_user.email))
+                logging.info('[login] logged in: %s' % (current_user.email))
                 return render_template('info.html', info='Successfully logged in as %s'  % (to_login.email))
 
         else:
@@ -140,7 +141,7 @@ def register():
 
             # Remove characters that are not in the corp.
             for c in char_copy:
-                if char_copy[c]['corp']['id'] != CORP_ID:
+                if char_copy[c]['corp']['id'] != app.config['corp_id']:
                     # Remove from the original dictionary.
                     logging.info('[register] removing character: %s' % (characters.result[c]))
                     del characters.result[c]
