@@ -6,8 +6,8 @@ from spearmint_libs import utils
 with main.app.app_context():
     main.db.create_all()
 
-utils = utils.Utils(main.ccp_db_path)
-pi = pi.Pi(main.ccp_db_path, main.pi_db_path, utils)
+utils = utils.Utils(main.app.config)
+pi = pi.Pi(main.app.config, utils)
 
 systems = ['jita', 'amarr']
 tiers   = [1,2,3]
