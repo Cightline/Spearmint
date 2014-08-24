@@ -3,15 +3,15 @@
 
 <script type="text/javascript">
 $(document).ready( function() {
-      $('#table').dataTable( { "iDisplayLength": 100 } ); } )
+      $('#table').dataTable( { "bPaginate": false } ); } )
 </script>
 
 <div class="container-fluid">
 
 <div class="row">
-    <div class="col-md-4">
+    <div class="col-md-3">
             {# We just need one "date" #}
-            <table class="display" id="table">
+            <table class="display" width="100%" id="table">
                 <thead>
                     <tr>
                         <th>Faction</th>
@@ -23,8 +23,8 @@ $(document).ready( function() {
                 {% for r in standings[0]['factions'].values() %}
                     <tr>
                         {# key is the price, the value is the item name #}
-                        <td>{{ r['name'] }}</td>
-                        <td>{{ '%.2f' % (r['standing']) }}</td>
+                        <td class="text-left"><font face="monospace">{{ r['name'] }}</td>
+                        <td class="text-right"><font face="monospace">{{ '%.2f' % (r['standing']) }}</td>
                     </tr>
                 {% endfor %}
                 </tbody>
