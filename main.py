@@ -3,6 +3,8 @@ import os
 import logging
 import copy
 import json
+import datetime
+
 from functools import wraps
 
 from flask import Flask, render_template, request, redirect, session, url_for, escape, Response
@@ -34,7 +36,7 @@ eve = evelink.eve.EVE()
 app = Flask(__name__)
 app.config.update(config)
 
-#app.config['DEBUG'] = True
+app.config['DEBUG'] = False
 
 
 app.config['SECRET_KEY']              = os.urandom(1488)
@@ -59,6 +61,11 @@ utils = Utils(app.config)
 pi    = Pi(app.config, utils)
 cache = SimpleCache()
 
+
+def format_time(timestamp):
+    return datetime.datetime.utcfromtimestamp(timestamp).isoformat()
+
+app.jinja_env.filters['format_time'] = format_time
 
 class RegisterForm(Form):
     keyid = TextField('KeyID')
@@ -91,16 +98,25 @@ def login():
     if request.method == 'POST':
 
         if check_auth(request.form.get('email'), request.form.get('password')):
-          
             to_login = load_user(request.form.get('email'))
             
             if login_user(to_login):
                 logging.info('[login] logged in: %s' % (current_user.email))
-                return render_template('info.html', info='Successfully logged in as %s'  % (to_login.email))
+                
 
+                # Fix this, it needs to actually redirect. 
+                next_page = request.form.get('next')
+
+                if next_page:
+                    return redirect(next_page)
+
+                else:
+                    return redirect('/')
+                
         else:
             return render_template('info.html', info='Incorrect email/password combination')
 
+    
     return render_template('login.html')
 
 
@@ -130,6 +146,7 @@ def register():
 
         try:
             characters = account.characters()
+
         except Exception as ex: 
             logging.warning('[register] exception: %s' % (ex))
             return render_template('info.html', info="It dosen't seem like you correctly entered your API")
