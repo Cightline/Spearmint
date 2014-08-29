@@ -25,7 +25,8 @@ $(document).ready( function() {
                     <tr>
                         {# key is the price, the value is the item name #}
                         <td><font face="monospace">                    {{ item.item }} </td>
-                        <td class="text-right"><font face="monospace"> {{ '%.2f' % item.price }} </td>
+                        {# <td class="text-right"><font face="monospace"> {{ '%.2f' % item.price }} </td> #}
+                        <td class="text-right"><font face="monospace"> {{ item.price|format_currency }} </td>
                     </tr>
 
                     {% endfor %}

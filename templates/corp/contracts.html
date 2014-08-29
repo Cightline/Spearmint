@@ -22,6 +22,7 @@ $(document).ready( function() {
                         <th>Reward</th>
                         <th>Days</th>
                         <th>Status</th>
+                        <th>Completed</th>
                     </tr>
                         
                 </thead>
@@ -35,14 +36,15 @@ $(document).ready( function() {
                         {% else %}
                             <td class="text-left"><font face="monospace"> n\a    </td>
                         {% endif %}
-                        <td class="text-left"><font face="monospace"> {{ contracts[row]['issuer_corp'] }}        </td>
+                        <td class="text-left"><font face="monospace"> {{ contracts[row]['issuer_corp']|corp_name_from_corp_id }}        </td>
                         <td class="text-left"><font face="monospace"> {{ contracts[row]['acceptor']|character_name_from_id }}        </td>
 
-                        <td class="text-left"><font face="monospace"> {{ contracts[row]['price'] }}        </td>
+                        <td class="text-left"><font face="monospace"> {{ contracts[row]['price']|format_currency }}        </td>
                         <td class="text-left"><font face="monospace"> {{ contracts[row]['type'] }}        </td>
                         <td class="text-left"><font face="monospace"> {{ contracts[row]['reward'] }}        </td>
                         <td class="text-left"><font face="monospace"> {{ contracts[row]['days'] }}        </td>
                         <td class="text-left"><font face="monospace"> {{ contracts[row]['status'] }}        </td>
+                        <td class="text-left"><font face="monospace"> {{ contracts[row]['completed']|format_time }}        </td>
                     </tr>
                 {% endfor %}
                 </tbody>

@@ -63,17 +63,27 @@ cache = SimpleCache()
 
 
 def format_time(timestamp):
-    return datetime.datetime.utcfromtimestamp(timestamp).isoformat()
+    if timestamp:
+        return datetime.datetime.utcfromtimestamp(timestamp).isoformat()
+    else:
+        return 'N/A'
+
+def format_currency(amount):
+    return '{:,.2f}'.format(amount)
 
 def character_name_from_id(id_):
     return eve.character_name_from_id(id_)[0]
 
 #Fix this 
 def corp_name_from_corp_id(id_):
-    return eve.affiliations_for_characters(id_)
+    corp_name = eve.affiliations_for_characters(id_)
+    return corp_name[0][id_]['name']
+
 
 app.jinja_env.filters['format_time'] = format_time
+app.jinja_env.filters['format_currency'] = format_currency
 app.jinja_env.filters['character_name_from_id'] = character_name_from_id
+app.jinja_env.filters['corp_name_from_corp_id'] = corp_name_from_corp_id
 
 class RegisterForm(Form):
     keyid = TextField('KeyID')
