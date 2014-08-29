@@ -7,7 +7,13 @@
 
 {# Used to show the "active" tab #}
 
-{% set navigation_bar = [('/corp', 'Corp'),('/register','Register')] -%}
+
+{% if current_user.email %}
+    {% set navigation_bar = [('/corp/index', 'Corp'),] -%}
+{% else %}
+    {% set navigation_bar = [('/corp/index', 'Corp'),] -%}
+{% endif %}
+    
 {% set active_page = request.endpoint|default('/') -%}
 
 <nav class="navbar navbar-default" role="navigation">
@@ -42,9 +48,9 @@
       <ul class="nav navbar-nav navbar-right">
           {% if current_user.email %}
             <a href="/logout" class="btn btn-default navbar-btn navbar-right">Sign out</a>
-
           {% else %}
-          <a href="/login" class="btn btn-default navbar-btn navbar-right">Sign in</a>
+            <a href="/login" class="btn btn-default navbar-btn navbar-right">Sign in</a>
+            <a href="/register" class="btn btn-default navbar-btn navbar-right">Register</a>
           {% endif %}
       </ul>
     </div><!-- /.navbar-collapse -->

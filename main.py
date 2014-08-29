@@ -65,7 +65,15 @@ cache = SimpleCache()
 def format_time(timestamp):
     return datetime.datetime.utcfromtimestamp(timestamp).isoformat()
 
+def character_name_from_id(id_):
+    return eve.character_name_from_id(id_)[0]
+
+#Fix this 
+def corp_name_from_corp_id(id_):
+    return eve.affiliations_for_characters(id_)
+
 app.jinja_env.filters['format_time'] = format_time
+app.jinja_env.filters['character_name_from_id'] = character_name_from_id
 
 class RegisterForm(Form):
     keyid = TextField('KeyID')
@@ -228,22 +236,30 @@ def pi_statistics(tier):
     return render_template('pi_statistics.html', results=results)
 
 
-@app.route('/corp', methods=['GET'])
+@app.route('/corp/index', methods=['GET'])
 @login_required
 def corp_index():
-    return render_template('corp_index.html')
+    return render_template('corp/index.html')
 
 
 @app.route('/corp/standings', methods=['GET'])
 @login_required
 def corp_standings():
-    return render_template('corp_standings.html', standings=corp.npc_standings())
+    return render_template('corp/standings.html', standings=corp.npc_standings())
 
 
 @app.route('/corp/wallet_transactions',  methods=['GET'])
 @login_required
 def corp_transactions():
-    return render_template('corp_transactions.html', wallet_transactions=corp.wallet_transactions())
+    return render_template('corp/wallet_transactions.html', wallet_transactions=corp.wallet_transactions())
+
+@app.route('/corp/contracts', methods=['GET'])
+@login_required
+def corp_contracts():
+
+    contracts = corp.contracts()[0]
+
+    return render_template('corp/contracts.html', contracts=contracts)
 
 
 if __name__ == '__main__':
