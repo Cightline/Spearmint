@@ -15,6 +15,7 @@ $(document).ready( function() {
                 <thead>
                     <tr>
                         <th>Title</th>
+                        <th>Issued</th>
                         <th>Issuer Corp</th>
                         <th>Acceptor</th>
                         <th>Price</th>
@@ -34,8 +35,9 @@ $(document).ready( function() {
                         {% if contracts[row]['title'] %}
                             <td class="text-left"><font face="monospace"> {{ contracts[row]['title'] }}        </td>
                         {% else %}
-                            <td class="text-left"><font face="monospace"> n\a    </td>
+                            <td class="text-left"><font face="monospace"> N\A                                  </td>
                         {% endif %}
+                        <td class="text-left"><font face="monospace"> {{ contracts[row]['issued']|format_time }}        </td>
                         <td class="text-left"><font face="monospace"> {{ contracts[row]['issuer_corp']|corp_name_from_corp_id }}        </td>
                         <td class="text-left"><font face="monospace"> {{ contracts[row]['acceptor']|character_name_from_id }}        </td>
 

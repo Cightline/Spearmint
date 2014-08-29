@@ -10,11 +10,10 @@ from functools import wraps
 from flask import Flask, render_template, request, redirect, session, url_for, escape, Response
 
 from flask.ext.login import LoginManager, login_user, logout_user, current_user, login_required
+from flask.ext.cache import Cache
 
 from flask_wtf import Form, RecaptchaField
 from wtforms import TextField
-
-from werkzeug.contrib.cache import SimpleCache
 
 
 import evelink.api
@@ -59,8 +58,7 @@ app.config['corp_id']  = corp.corporation_sheet()[0]['id']
 
 utils = Utils(app.config)
 pi    = Pi(app.config, utils)
-cache = SimpleCache()
-
+cache = Cache(app,config={'CACHE_DIR':app.config['general']['cache_dir'], 'CACHE_TYPE': app.config['general']['cache_type']})
 
 def format_time(timestamp):
     if timestamp:
@@ -71,6 +69,7 @@ def format_time(timestamp):
 def format_currency(amount):
     return '{:,.2f}'.format(amount)
 
+@cache.memoize()
 def character_name_from_id(id_):
     return eve.character_name_from_id(id_)[0]
 
