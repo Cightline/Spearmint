@@ -31,9 +31,9 @@ $(document).ready( function() {
                         {# key is the price, the value is the item name #}
                         <td><font face="monospace"> {{ row['type']['name'] }}     </td>
                         <td class="text-rigth"><font face="monospace"> {{ row['action'] }}           </td>
-                        <td class="text-right"><font face="monospace"> {{ '%.2f' % (row['price']) }} </td>
+                        <td class="text-right"><font face="monospace"> {{ row['price']|format_currency }} </td>
                         <td class="text-right"><font face="monospace"> {{ row['quantity'] }}         </td>
-                        <td class="text-right"><font face="monospace"> {{ '%.2f' % (row['quantity'] * row['price']) }} </td>
+                        <td class="text-right"><font face="monospace"> {{ (row['quantity'] * row['price'])|format_currency }} </td>
                         <td class="text-right"><font face="monospace"> {{ row['station']['name'] }}  </td>
                         <td class="text-right"><font face="monospace"> {{ row['char']['name'] }}     </td>
                         <td class="text-right"><font face="monospace"> {{ row['timestamp']|format_time }}        </td>
