@@ -14,7 +14,6 @@ tiers   = [1,2,3]
 
 for system_name in systems:
     system = utils.search_system(system_name)
-    print(system)
     for tier in tiers:
         pi.store_prices(tier, system['solarSystemID'])
 

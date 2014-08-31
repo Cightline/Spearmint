@@ -1,10 +1,13 @@
 import xml.etree.cElementTree as ET
 import os
 import datetime
+import logging  
 
 from sqlalchemy import create_engine,  Table, Column, Integer, String, Time
 from sqlalchemy.orm import mapper, Session, load_only, sessionmaker
 from sqlalchemy.ext.automap import automap_base
+
+import requests
 
 from spearmint_libs import utils
 
@@ -12,6 +15,7 @@ from sqlalchemy.ext.declarative import declarative_base
 
 
 Base = declarative_base()
+
 
 # Class to store the info from eve-central
 class StorePi(Base):
@@ -27,13 +31,13 @@ class StorePi(Base):
 
 
 
-
-
-
 class Pi():
     def __init__(self, config, utils_obj):
+        logging.basicConfig(filename=config['general']['log_path'], level=logging.DEBUG)
+
         self.store_engine = create_engine(config['database']['pi_db'])
-        # First int is the usual tier people use, the 2nd int is the database version
+       
+        # The key is the "usual" tier, the value is the database value
         self.tiers  = {0:3000, 1:40, 2:5, 3:3}
         self.ec_url = 'http://api.eve-central.com/api/marketstat'
         self.utils = utils_obj
@@ -45,7 +49,7 @@ class Pi():
 
                 
     def get_tiers_id(self, tier):
-        # Returns the typeIDs associated with PI, from the given tier.
+        '''Returns the typeIDs associated with PI, from the given tier.'''
         ids = []
 
         q = self.session.query(self.base.classes.planetSchematicsTypeMap).filter_by(quantity=self.tiers[tier])
@@ -56,7 +60,10 @@ class Pi():
             if to_append not in ids:
                 ids.append(to_append)
         
-        return ids 
+        if len(ids):
+            return ids
+
+        return False
 
     def get_prices(self, tier, system):
         Session = sessionmaker(bind=self.store_engine)
@@ -72,38 +79,45 @@ class Pi():
 
 
     def store_prices(self, tier, system):
+        '''This obviously stores prices in the database. Everytime it runs, it increments the "iteration" \
+           integer from the database so I can keep things organized a little bit better.'''
+
         ids    = self.get_tiers_id(tier)
         prices = {}
+        count  = 0
         
         Session = sessionmaker(bind=self.store_engine)
-
         store_session = Session()
 
         # Why the fuck do I have to add this?
         store_session._model_changes = {}
-        
+ 
+        # Lookup the last iteration int stored, and add one. If it does not exist, start at 1
         query = store_session.query(StorePi).order_by(StorePi.iteration.desc()).first() or None
 
+        if query:
+            iteration = query.iteration + 1
 
-        if not query:
+        else:
             iteration = 1
 
-            
-        else:
-            iteration = query.iteration + 1 
-      
-            print('iteration: ', iteration)
-
+        # Store the time this iteration was cached
         date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        print(date)
-        for i in ids:
-            item = self.utils.lookup_typeName(i)['typeName']
-            data = {'typeid':i, 'usesystem':system}
-            page = self.utils.request(self.ec_url, data)
 
-            tree = ET.parse(page)
-            root = tree.getroot()
-            
+        for id_ in ids:
+            count += 1
+            logging.info('storing PI information from system: %s, tier: %s -- %s of %s' % (system, tier, count, len(ids)))
+
+            item = self.utils.lookup_typeName(id_)['typeName']
+            data = {'typeid':id_, 'usesystem':system}
+            page = requests.get(self.ec_url, params=data)
+
+            if page.status_code != 200:
+                logging.warning('page.status_code is %s, expecting 200' % (page.status_code))
+                return False
+
+
+            root = ET.fromstring(page.text)
             
             for b in root.iter('buy'):
                 maximum = b.find('max').text
@@ -115,12 +129,9 @@ class Pi():
                                    date=date,
                                    iteration=iteration) 
 
-                print(item)
                 store_session.add(to_store)
                 store_session.commit()
                 
-                prices[float(maximum)] = self.utils.lookup_typeName(i)['typeName']
+                prices[float(maximum)] = self.utils.lookup_typeName(id_)['typeName']
                 break
         
-          
-

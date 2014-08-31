@@ -1,6 +1,3 @@
-import urllib.request
-import urllib.error
-import urllib.parse
 import xml.etree.cElementTree as ET
 
 from sqlalchemy import create_engine, or_
@@ -14,15 +11,6 @@ class Utils():
         engine  = create_engine(config['database']['ccp_dump'], convert_unicode=True)
         self.base.prepare(engine, reflect=True)
         self.session = Session(engine)
-        #self.session = ccp_db_session
-
-
-    def request(self, url, data):
-        d = urllib.parse.urlencode(data)
-        r = urllib.request.Request(url, 
-                                   urllib.parse.urlencode(data).encode('utf-8'))
-
-        return urllib.request.urlopen(r)
 
 
     def lookup_typeName(self, id):
@@ -32,10 +20,6 @@ class Utils():
         return {'typeName':q.first().typeName} or None
 
     
-    #def search_station(self, query):
-        #self.cursor.execute('select stationName,stationId from staStations where stationName like ?', ('%'+query+'%',))
-        #return self.cursor.fetchall()
-
     def search_system(self, name):
         q = self.session.query(self.base.classes.mapSolarSystems).filter(
             self.base.classes.mapSolarSystems.solarSystemName.like(name))
@@ -47,10 +31,6 @@ class Utils():
             return {'solarSystemName':result.solarSystemName, 'solarSystemID':result.solarSystemID} 
 
         return None
-
-    #def search_item(self, query):
-    #    self.cursor.execute('select typeName,typeId from invTypes where typeName like ?', ('%'+query+'%',))
-    #    return self.cursor.fetchall()
 
 
 
