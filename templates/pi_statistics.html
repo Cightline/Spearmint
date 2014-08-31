@@ -1,17 +1,23 @@
 {% include 'header.html' %}
 {% include 'datatables.html' %}
 
-<script type="text/javascript">
-$(document).ready( function() {
-      $('#table').dataTable( { "bPaginate": false } ); } )
-</script>
+
 
 <div class="container-fluid">
-
 <div class="row">
+{# THE WHOLE PAGE IS A LOOP, to allow multiple systems #}
+{% for key in results.keys() %}
+
+<script type="text/javascript">
+$(document).ready( function() { $('#{{ key.lower() }}').dataTable( { "bPaginate": false } ); } )
+</script>
+
+
     <div class="col-md-4">
+        <h4>Cached at: {{ results[key]['cached_time'] }}</h4>
+        <h4>System: {{ key.capitalize() }}</h4>
             {# We just need one "date" #}
-            <table class="display" id="table">
+            <table class="display" id="{{ key }}">
                 <thead>
                     <tr>
                         <th>Item</th>
@@ -19,20 +25,18 @@ $(document).ready( function() {
                     </tr>
                 </thead>
                 <tbody>
-                {% for r in results.keys() %}
-                    {% for item in results[r] %}
-      
+                {# All of this is being pulled from the StorePi sqlachemy object #}
+                {% for item in results[key]['data'] %}
                     <tr>
                         {# key is the price, the value is the item name #}
-                        <td><font face="monospace">                    {{ item.item }} </td>
-                        {# <td class="text-right"><font face="monospace"> {{ '%.2f' % item.price }} </td> #}
-                        <td class="text-right"><font face="monospace"> {{ item.price|format_currency }} </td>
+                        <td>                   {{ item.item }}                 </td>
+                        <td class="text-right">{{ item.price|format_currency }}</td>
                     </tr>
-
-                    {% endfor %}
                 {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
 </div>
+<br>
+{% endfor %}

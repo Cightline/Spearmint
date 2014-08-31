@@ -1,0 +1,17 @@
+{
+    "Aqueous Liquids":["Barren","Gas","Ice","Oceanic","Storm","Temperate"],
+    "Autotrophs":["Temperate"],
+    "Base Metals":["Barren","Gas","Lava","Plasma","Storm"],
+    "Carbon Compounds":["Barren","Oceanic","Temperate"],
+    "Complex Organisms":["Oceanic","Temperate"],
+    "Felsic Magma":["Lava"],
+    "Heavy Metals":["Ice","Lava","Plasma"],
+    "Ionic Solutions":["Gas","Storm"],
+    "Micro Organisms":["Barren","Ice","Oceanic","Temperate"],
+    "Noble Gas":["Gas","Ice","Storm"],
+    "Noble Metals":["Barren","Plasma"],
+    "Non-CS Crystals":["Lava","Plasma"],
+    "Planktic Colonies":["Ice","Oceanic"],
+    "Reactive Gas":["Gas"],
+    "Suspended Plasma":["Lava","Plasma","Storm"]
+}

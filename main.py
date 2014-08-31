@@ -73,7 +73,6 @@ def format_currency(amount):
 def character_name_from_id(id_):
     return eve.character_name_from_id(id_)[0]
 
-#Fix this 
 def corp_name_from_corp_id(id_):
     corp_name = eve.affiliations_for_characters(id_)
     return corp_name[0][id_]['name']
@@ -103,6 +102,7 @@ def check_auth(email, password):
     else:
         logging.info("[check_auth] couldn't find %s for authentication" % (email))
     return False
+
 
 @login_manager.user_loader 
 def load_user(id):
@@ -233,14 +233,14 @@ def confirm_register():
 def pi_statistics(tier):
 
     results = {}
-    systems = ['jita']
+    systems = ['jita', 'amarr']
 
     for system_name in systems:
         system = utils.search_system(system_name)
         data = pi.get_prices(tier, system['solarSystemID'])
 
         if data:
-            results[system['solarSystemName']] = data
+            results[system['solarSystemName'].lower()] = {"data":data, "cached_time":data[0].date}
 
     return render_template('pi_statistics.html', results=results)
 

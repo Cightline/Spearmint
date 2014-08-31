@@ -23,8 +23,8 @@ $(document).ready( function() {
                 {% for r in standings[0]['factions'].values() %}
                     <tr>
                         {# key is the price, the value is the item name #}
-                        <td class="text-left"><font face="monospace">{{ r['name'] }}</td>
-                        <td class="text-right"><font face="monospace">{{ '%.2f' % (r['standing']) }}</td>
+                        <td class="text-left">{{ r['name'] }}</td>
+                        <td class="text-right">{{ '%.2f' % (r['standing']) }}</td>
                     </tr>
                 {% endfor %}
                 </tbody>

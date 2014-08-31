@@ -29,14 +29,14 @@ $(document).ready( function() {
                 {% for row in wallet_transactions[0] %}
                     <tr>
                         {# key is the price, the value is the item name #}
-                        <td><font face="monospace"> {{ row['type']['name'] }}     </td>
-                        <td class="text-rigth"><font face="monospace"> {{ row['action'] }}           </td>
-                        <td class="text-right"><font face="monospace"> {{ row['price']|format_currency }} </td>
-                        <td class="text-right"><font face="monospace"> {{ row['quantity'] }}         </td>
-                        <td class="text-right"><font face="monospace"> {{ (row['quantity'] * row['price'])|format_currency }} </td>
-                        <td class="text-right"><font face="monospace"> {{ row['station']['name'] }}  </td>
-                        <td class="text-right"><font face="monospace"> {{ row['char']['name'] }}     </td>
-                        <td class="text-right"><font face="monospace"> {{ row['timestamp']|format_time }}        </td>
+                        <td> {{ row['type']['name'] }}     </td>
+                        <td class="text-rigth"> {{ row['action'] }}           </td>
+                        <td class="text-right"> {{ row['price']|format_currency }} </td>
+                        <td class="text-right"> {{ row['quantity'] }}         </td>
+                        <td class="text-right"> {{ (row['quantity'] * row['price'])|format_currency }} </td>
+                        <td class="text-right"> {{ row['station']['name'] }}  </td>
+                        <td class="text-right"> {{ row['char']['name'] }}     </td>
+                        <td class="text-right"> {{ row['timestamp']|format_time }}        </td>
                     </tr>
                 {% endfor %}
                 </tbody>

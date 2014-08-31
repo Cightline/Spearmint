@@ -6,11 +6,12 @@
 <link rel="stylesheet" type="text/css" href="//cdn.datatables.net/plug-ins/725b2a2115b/integration/bootstrap/3/dataTables.bootstrap.css">
 <link rel="stylesheet" type="text/css" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"> 
 
+<style> td { font-family: monospace; } </style>
+
 {# Used to show the "active" tab #}
 
-
 {% if current_user.email %}
-    {% set navigation_bar = [('/corp/index', 'Corp'),] -%}
+    {% set navigation_bar = [('/corp/index', 'Corp'),('/corp/contracts', 'Contracts'),('/corp/standings', 'Standings'),] -%}
 {% else %}
     {% set navigation_bar = [('/corp/index', 'Corp'),] -%}
 {% endif %}

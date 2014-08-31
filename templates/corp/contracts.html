@@ -33,20 +33,19 @@ $(document).ready( function() {
                     <tr>
                         {# key is the price, the value is the item name #}
                         {% if contracts[row]['title'] %}
-                            <td class="text-left"><font face="monospace"> {{ contracts[row]['title'] }}        </td>
+                            <td class="text-left"> {{ contracts[row]['title'] }}        </td>
                         {% else %}
-                            <td class="text-left"><font face="monospace"> N\A                                  </td>
+                            <td class="text-left"> N\A                                  </td>
                         {% endif %}
-                        <td class="text-left"><font face="monospace"> {{ contracts[row]['issued']|format_time }}        </td>
-                        <td class="text-left"><font face="monospace"> {{ contracts[row]['issuer_corp']|corp_name_from_corp_id }}        </td>
-                        <td class="text-left"><font face="monospace"> {{ contracts[row]['acceptor']|character_name_from_id }}        </td>
-
-                        <td class="text-left"><font face="monospace"> {{ contracts[row]['price']|format_currency }}        </td>
-                        <td class="text-left"><font face="monospace"> {{ contracts[row]['type'] }}        </td>
-                        <td class="text-left"><font face="monospace"> {{ contracts[row]['reward'] }}        </td>
-                        <td class="text-left"><font face="monospace"> {{ contracts[row]['days'] }}        </td>
-                        <td class="text-left"><font face="monospace"> {{ contracts[row]['status'] }}        </td>
-                        <td class="text-left"><font face="monospace"> {{ contracts[row]['completed']|format_time }}        </td>
+                        <td class="text-left"> {{ contracts[row]['issued']|format_time }}        </td>
+                        <td class="text-left"> {{ contracts[row]['issuer_corp']|corp_name_from_corp_id }}        </td>
+                        <td class="text-left"> {{ contracts[row]['acceptor']|character_name_from_id }}        </td>
+                        <td class="text-left"> {{ contracts[row]['price']|format_currency }}        </td>
+                        <td class="text-left"> {{ contracts[row]['type'] }}        </td>
+                        <td class="text-left"> {{ contracts[row]['reward'] }}        </td>
+                        <td class="text-left"> {{ contracts[row]['days'] }}        </td>
+                        <td class="text-left"> {{ contracts[row]['status'] }}        </td>
+                        <td class="text-left"> {{ contracts[row]['completed']|format_time }}        </td>
                     </tr>
                 {% endfor %}
                 </tbody>

@@ -2,6 +2,7 @@ import xml.etree.cElementTree as ET
 import os
 import datetime
 import logging  
+import json
 
 from sqlalchemy import create_engine,  Table, Column, Integer, String, Time
 from sqlalchemy.orm import mapper, Session, load_only, sessionmaker
@@ -40,14 +41,20 @@ class Pi():
         # The key is the "usual" tier, the value is the database value
         self.tiers  = {0:3000, 1:40, 2:5, 3:3}
         self.ec_url = 'http://api.eve-central.com/api/marketstat'
-        self.utils = utils_obj
+        self.utils  = utils_obj
 
         self.base = automap_base()
-        engine = create_engine(config['database']['ccp_dump'], convert_unicode=True)
+        engine    = create_engine(config['database']['ccp_dump'], convert_unicode=True)
+        
         self.base.prepare(engine, reflect=True)
         self.session = Session(engine)
 
-                
+        material_file_path = '%s/constants/planet_materials.json' % (config['general']['install_dir'])
+        
+        with open(material_file_path) as material_file:
+            planet_materials = json.load(material_file)
+        
+
     def get_tiers_id(self, tier):
         '''Returns the typeIDs associated with PI, from the given tier.'''
         ids = []
