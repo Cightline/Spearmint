@@ -329,6 +329,7 @@ def user_change_password():
             if password == verify_password:
                 auth = Auth(current_user.email, password)
                 current_user.password = auth.pw_hash
+                db.session.commit()
 
                 return render_template('info.html', info='Password successfully updated.')
 
