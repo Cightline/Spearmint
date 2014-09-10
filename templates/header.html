@@ -11,10 +11,11 @@
 {# Used to show the "active" tab #}
 
 {% if current_user.email %}
-    {% set navigation_bar = [('/corp/index', 'Corp'),
-                             ('/corp/contracts', 'Contracts'),
-                             ('/corp/standings', 'Standings'), 
-                             ('/user/index', 'Settings')] -%}
+{% set navigation_bar = [('/corp/index', 'Corp'),
+                         ('/corp/contracts', 'Contracts'),
+                         ('/corp/standings', 'Standings'), 
+                         ('/user/index', 'Settings')] -%}
+
 {% else %}
     {% set navigation_bar = [('/corp/index', 'Corp'),] -%}
 {% endif %}
