@@ -324,7 +324,6 @@ def user_settings():
 @app.route('/user/settings/password', methods=['POST', 'GET'])
 @login_required
 def user_change_password():
-
     if request.method == 'POST':
         password        = request.form.get('password')
         verify_password = request.form.get('verify_password')
