@@ -17,6 +17,7 @@ from flask.ext.cache import Cache
 from flask_wtf import Form, RecaptchaField
 from wtforms import TextField
 
+from werkzeug.security import generate_password_hash, check_password_hash
 
 import evelink.api
 
@@ -103,14 +104,14 @@ class UserChangePassword(Form):
 def check_auth(email, password):
     query = User.query.filter_by(email=email).first()
     if query:
-        a = Auth(email, password)
-        if a.check_password(password):
+        if check_password_hash(query.password, password) == True:
             logging.info('[check_auth] correct password for: %s' % (query.email))
             return True
         else:
             logging.info('[check_auth] incorrect password for: %s' % (query.email))
     else:
         logging.info("[check_auth] couldn't find %s for authentication" % (email))
+
     return False
 
 def generate_code():
@@ -125,9 +126,12 @@ def load_user(id):
 
 @app.route('/login', methods=['POST','GET'])
 def login():
+    if current_user.is_authenticated():
+        return render_template('info.html', info='You are already logged in')
+    
     if request.method == 'POST':
-
-        if check_auth(request.form.get('email'), request.form.get('password')):
+        
+        if check_auth(request.form.get('email'), request.form.get('password')) == True:
             to_login = load_user(request.form.get('email'))
             
             if login_user(to_login):
