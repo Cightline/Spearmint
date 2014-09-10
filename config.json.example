@@ -1,0 +1,26 @@
+{
+    "general":{
+        "log_path":"log",
+        "cache_dir":"/home/stealth/programming/spearmint/cache",
+        "cache_type":"filesystem",
+        "install_dir":"/home/stealth/programming/spearmint",
+        "hostname":"something.cc"
+    },
+
+    "email":{
+        "from":"email@something.cc"
+    },
+
+    "database":{
+        "uri":"sqlite:////home/stealth/programming/spearmint/user_data.db",
+        "ccp_dump":"sqlite:////home/stealth/programming/spearmint/sqlite-latest.sqlite",
+        "pi_db":"sqlite:////home/stealth/programming/spearmint/pi.db"
+    },
+
+    "corp_api":{
+        "code":"long_string",
+        "key":"short_string"
+    }
+
+}
+         

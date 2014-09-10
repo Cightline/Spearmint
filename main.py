@@ -4,8 +4,10 @@ import logging
 import copy
 import json
 import datetime
+import hashlib
 
-from functools import wraps
+from urllib.parse import urlencode
+from functools    import wraps
 
 from flask import Flask, render_template, request, redirect, session, url_for, escape, Response
 
@@ -22,6 +24,7 @@ from spearmint_libs.utils import Utils
 from spearmint_libs.pi    import Pi
 from spearmint_libs.auth  import Auth
 from spearmint_libs.user  import db, User, Character
+from spearmint_libs.emailtools import EmailTools
 
 
 with open("config.json") as cfg:
@@ -31,6 +34,7 @@ assert(config)
 
 
 eve = evelink.eve.EVE()
+emailtools = EmailTools(config)
 
 app = Flask(__name__)
 app.config.update(config)
@@ -87,8 +91,14 @@ class RegisterForm(Form):
     keyid = TextField('KeyID')
     code  = TextField('Code')
 
-
     recaptcha = RecaptchaField()
+
+
+class UserChangePassword(Form):
+    password    = TextField('Password')
+    verify_pass = TextField('Verify Password')
+
+
 
 def check_auth(email, password):
     query = User.query.filter_by(email=email).first()
@@ -102,6 +112,9 @@ def check_auth(email, password):
     else:
         logging.info("[check_auth] couldn't find %s for authentication" % (email))
     return False
+
+def generate_code():
+    return hashlib.sha1(os.urandom(1488)).hexdigest()
 
 
 @login_manager.user_loader 
@@ -198,9 +211,12 @@ def register():
 @app.route('/confirm_register', methods=['POST', 'GET'])
 def confirm_register():
     if request.method == 'POST': 
-      
-        auth = Auth(request.form.get('register_email'), request.form.get('register_password'))
 
+      
+        auth  = Auth(request.form.get('register_email'), request.form.get('register_password'))
+        email = request.form.get('register_email')
+       
+        
         logging.info('[confirm_register] password hash: %s' % (auth.pw_hash))
 
         # Make sure user isn't already in the db. 
@@ -210,11 +226,17 @@ def confirm_register():
             if request.form.get('register_email') == query.email:
                 return render_template('info.html', info='You have already registered')
 
+
+        
         # Add the user to the db and generate the password hash.
+        activation_code = generate_code()
+        
         user = User(email=request.form.get('register_email'), 
                     password=auth.pw_hash,
                     api_key_id=session['api_key_id'],
-                    api_code=session['api_code'])
+                    api_code=session['api_code'],
+                    active=False,
+                    activation_code=activation_code)
      
         db.session.add(user)
         db.session.commit()
@@ -224,10 +246,131 @@ def confirm_register():
             db.session.add(Character(character_id=c, user=user))
             db.session.commit() 
 
+
+        activation_link = 'http://%s/activate_account?activation_code=%s&email=%s' % (config['general']['hostname'], activation_code, email)
+
+        emailtools.send_email(to=email, 
+                              subject='Activate your account', 
+                              body=activation_link)
+
         return render_template('submitted_register.html')
 
     return render_template('confirm_register.html', characters=session['characters'])
 
+
+@app.route('/reset_password', methods=['POST','GET'])
+def email_reset_password():
+    if request.method == 'POST':
+        email = request.form.get('email')
+
+        if not email:
+            return render_template('info.html', info='Missing email')
+
+        query = User.query.filter_by(email=email).first()
+
+        if not query:
+            return render_template('info.html', info='User not found')
+
+        recovery_code = generate_code() 
+        query.recovery_code = recovery_code
+        query.recovery_timestamp = datetime.datetime.now()
+
+        db.session.commit()
+
+        recovery_link = 'http://%s/password_recovery?recovery_code=%s&email=%s' % (config['general']['hostname'], recovery_code, email)
+
+        emailtools.send_email(to=email,
+                              subject='Password recovery',
+                              body=recovery_link)
+
+        return render_template('info.html', info='Recovery email has been sent')
+
+    return render_template('reset_password.html')
+
+
+@app.route('/password_recovery', methods=['POST', 'GET'])
+def reset_password():
+    if request.method == 'GET':
+        email         = request.args.get('email')
+        recovery_code = request.args.get('recovery_code')
+   
+        if not email or not recovery_code:
+            return render_template('info.html', info='Invalid recovery code or email')
+
+        query = User.query.filter_by(email=email).first()
+
+        # Gotta be pretty 1337 to get this far
+        if not query:
+            return render_template('info.html', info='Account not found')
+
+        time_elapsed = (datetime.datetime.now() - query.recovery_timestamp) / 3600.0 
+        if recovery_code == query.recovery_code:
+            login_user(query)
+            return redirect(url_for('user/index'))
+
+    return render_template('password_recovery.html')
+
+
+
+@app.route('/user/index', methods=['POST', 'GET'])
+@login_required
+def user_settings():
+    return render_template('user/index.html')
+
+@app.route('/user/settings/password', methods=['POST', 'GET'])
+@login_required
+def user_change_password():
+
+    if request.method == 'POST':
+        password        = request.form.get('password')
+        verify_password = request.form.get('verify_password')
+
+        if len(password) and len(verify_password):
+            if password == verify_password:
+                auth = Auth(current_user.email, password)
+                current_user.password = auth.pw_hash
+
+                return render_template('info.html', info='Password successfully updated.')
+
+            else:
+                return render_template('info.html', info='Passwords do not match')
+        
+        return render_template('info.html', info='No password entered')
+
+    return render_template('user/settings/password.html', form=UserChangePassword())
+
+
+@app.route('/activate_account', methods=['GET'])
+def activate_account():
+    email = request.args.get('email')
+    activation_code  = request.args.get('activation_code')
+
+    query = User.query.filter_by(email=email).first()  
+
+    if not query or not email or not activation_code:
+        return render_template('info.html', info='There is an issue trying to activate your account, please contact the admin.')
+
+   
+    # See if the activation code matches, and if it does "activate" the account, and set the previously used
+    # code to 'NULL'
+    if activation_code == query.activation_code and query.activation_code != 'NULL':
+        query.activation_code = 'NULL'
+        query.active = True
+        query.activation_timestamp = datetime.datetime.now()
+        db.session.commit()
+
+        #time_elapsed = (datetime.datetime.now() - query.activation_timestamp).total_seconds() / 3600.0
+       
+        # If time has exceeded 1 week
+        #if time_elapsed > 168:
+        #    return render_template('info.html', info='Activation code is expired')
+
+        #else:
+        #    return render_template('info.html', info='Good code')
+
+        return render_template('info.html', info='Your account has been activated')
+    
+    return render_template('info.html', info='Invalid activation code or email')
 
 @app.route('/pi_statistics/<int:tier>', methods=['GET', 'POST'])
 def pi_statistics(tier):

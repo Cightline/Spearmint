@@ -14,7 +14,12 @@ class User(db.Model):
     password   = db.Column(db.String(255))
     api_code   = db.Column(db.String(255))
     api_key_id = db.Column(db.String(255))
-    is_active  = db.Column(db.Boolean)
+    active     = db.Column(db.Boolean)
+    activation_code      = db.Column(db.String(255))
+    recovery_code        = db.Column(db.String(255))
+    activation_timestamp = db.Column(db.DateTime())
+    recovery_timestamp   = db.Column(db.DateTime())
+
     characters = db.relationship('Character', backref='user', lazy='dynamic')
 
     def is_active(self):
