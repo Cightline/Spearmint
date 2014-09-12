@@ -1,8 +1,26 @@
 import xml.etree.cElementTree as ET
+import datetime
+import hashlib
+import os
 
 from sqlalchemy import create_engine, or_
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.automap import automap_base
+
+
+def generate_code():
+    return hashlib.sha1(os.urandom(1488)).hexdigest()
+
+
+def format_time(timestamp):
+    if timestamp:
+        return datetime.datetime.utcfromtimestamp(timestamp).isoformat()
+    else:
+        return 'N/A'
+
+
+def format_currency(amount):
+    return '{:,.2f}'.format(amount)
 
 
 class Utils():

@@ -1,9 +1,7 @@
 {
     "general":{
-        "log_path":"log",
-        "cache_dir":"/home/stealth/programming/spearmint/cache",
+        "base_dir":"/home/stealth/programming/spearmint",
         "cache_type":"filesystem",
-        "install_dir":"/home/stealth/programming/spearmint",
         "hostname":"something.cc"
     },
 
@@ -18,9 +16,8 @@
     },
 
     "corp_api":{
-        "code":"long_string",
-        "key":"short_string"
+        "code":"long_string_here",
+        "key":"numbers_here"
     }
-
 }
          

@@ -21,7 +21,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 import evelink.api
 
-from spearmint_libs.utils import Utils
+from spearmint_libs.utils import Utils, format_time, format_currency, generate_code
 from spearmint_libs.pi    import Pi
 from spearmint_libs.auth  import Auth
 from spearmint_libs.user  import db, User, Character
@@ -41,11 +41,9 @@ app = Flask(__name__)
 app.config.update(config)
 
 app.config['DEBUG'] = False
-
-
 app.config['SECRET_KEY']              = os.urandom(1488)
 app.config['SQLALCHEMY_DATABASE_URI'] = app.config['database']['uri']
-
+app.config['log_path'] = '%s/log' % (app.config['general']['base_dir'])
 
 db.init_app(app)
 
@@ -53,7 +51,7 @@ login_manager  = LoginManager()
 login_manager.login_view = 'login'
 login_manager.init_app(app)
 
-logging.basicConfig(filename=app.config['general']['log_path'], level=logging.DEBUG)
+logging.basicConfig(filename=app.config['log_path'], level=logging.DEBUG)
 
 # Setup the corp api object and get the corp ID
 corp_api = evelink.api.API(api_key=(app.config['corp_api']['key'], app.config['corp_api']['code']))
@@ -63,16 +61,8 @@ app.config['corp_id']  = corp.corporation_sheet()[0]['id']
 
 utils = Utils(app.config)
 pi    = Pi(app.config, utils)
-cache = Cache(app,config={'CACHE_DIR':app.config['general']['cache_dir'], 'CACHE_TYPE': app.config['general']['cache_type']})
+cache = Cache(app,config={'CACHE_DIR':'%s/cache' % (app.config['general']['base_dir']), 'CACHE_TYPE': app.config['general']['cache_type']})
 
-def format_time(timestamp):
-    if timestamp:
-        return datetime.datetime.utcfromtimestamp(timestamp).isoformat()
-    else:
-        return 'N/A'
-
-def format_currency(amount):
-    return '{:,.2f}'.format(amount)
 
 @cache.memoize()
 def character_name_from_id(id_):
@@ -88,6 +78,7 @@ app.jinja_env.filters['format_currency'] = format_currency
 app.jinja_env.filters['character_name_from_id'] = character_name_from_id
 app.jinja_env.filters['corp_name_from_corp_id'] = corp_name_from_corp_id
 
+
 class RegisterForm(Form):
     keyid = TextField('KeyID')
     code  = TextField('Code')
@@ -98,7 +89,6 @@ class RegisterForm(Form):
 class UserChangePassword(Form):
     password    = TextField('Password')
     verify_pass = TextField('Verify Password')
-
 
 
 def check_auth(email, password):
@@ -114,9 +104,6 @@ def check_auth(email, password):
         logging.info("[check_auth] couldn't find %s for authentication" % (email))
 
     return False
-
-def generate_code():
-    return hashlib.sha1(os.urandom(1488)).hexdigest()
 
 
 @login_manager.user_loader 
@@ -175,7 +162,10 @@ def register():
 
         logging.info('[register] request.form: %s' % (request.form))
 
-        api = evelink.api.API(api_key=(request.form.get('keyid'), request.form.get('code')))
+        keyid = request.form.get('keyid')
+        code  = request.form.get('code')
+
+        api = evelink.api.API(api_key=(keyid, code))
         account = evelink.account.Account(api)
 
         try:
@@ -183,6 +173,7 @@ def register():
 
         except Exception as ex: 
             logging.warning('[register] exception: %s' % (ex))
+
             return render_template('info.html', info="It dosen't seem like you correctly entered your API")
 
         if characters.result:
@@ -200,9 +191,9 @@ def register():
             if characters.result:
                 logging.info('[register] characters.result: %s' % characters.result)
 
-                session['characters'] = characters.result
-                session['api_code']   = request.form.get('register_code')
-                session['api_key_id']  = request.form.get('register_keyid')
+                session['characters']  = characters.result
+                session['api_code']    = code
+                session['api_key_id']  = keyid
 
                 return redirect(url_for('confirm_register'))
 
@@ -214,12 +205,14 @@ def register():
 
 @app.route('/confirm_register', methods=['POST', 'GET'])
 def confirm_register():
+    
+    if 'api_key_id' not in session or 'api_code' not in session or 'characters' not in session:
+        return render_template('info.html', info='Missing API, restart the registration.')
+    
     if request.method == 'POST': 
 
-      
         auth  = Auth(request.form.get('register_email'), request.form.get('register_password'))
         email = request.form.get('register_email')
-       
         
         logging.info('[confirm_register] password hash: %s' % (auth.pw_hash))
 
@@ -244,12 +237,10 @@ def confirm_register():
      
         db.session.add(user)
         db.session.commit()
-
         
         for c in session['characters']:
             db.session.add(Character(character_id=c, user=user))
             db.session.commit() 
-
 
         activation_link = 'http://%s/activate_account?activation_code=%s&email=%s' % (config['general']['hostname'], activation_code, email)
 
@@ -328,18 +319,17 @@ def user_change_password():
         password        = request.form.get('password')
         verify_password = request.form.get('verify_password')
 
-        if len(password) and len(verify_password):
-            if password == verify_password:
-                auth = Auth(current_user.email, password)
-                current_user.password = auth.pw_hash
-                db.session.commit()
+        if not len(password) and not len(verify_password):
+            return render_template('info.html', info='No password entered')
+            
+        if password != verify_password:
+            return render_template('info.html', info='Passwords do not match')
+            
+        auth = Auth(current_user.email, password)
+        current_user.password = auth.pw_hash
+        db.session.commit()
 
-                return render_template('info.html', info='Password successfully updated.')
-
-            else:
-                return render_template('info.html', info='Passwords do not match')
-        
-        return render_template('info.html', info='No password entered')
+        return render_template('info.html', info='Password successfully updated.')
 
     return render_template('user/settings/password.html', form=UserChangePassword())
 
@@ -354,7 +344,6 @@ def activate_account():
     if not query or not email or not activation_code:
         return render_template('info.html', info='There is an issue trying to activate your account, please contact the admin.')
 
-   
     # See if the activation code matches, and if it does "activate" the account, and set the previously used
     # code to 'NULL'
     if activation_code == query.activation_code and query.activation_code != 'NULL':
@@ -362,15 +351,6 @@ def activate_account():
         query.active = True
         query.activation_timestamp = datetime.datetime.now()
         db.session.commit()
-
-        #time_elapsed = (datetime.datetime.now() - query.activation_timestamp).total_seconds() / 3600.0
-       
-        # If time has exceeded 1 week
-        #if time_elapsed > 168:
-        #    return render_template('info.html', info='Activation code is expired')
-
-        #else:
-        #    return render_template('info.html', info='Good code')
 
         return render_template('info.html', info='Your account has been activated')
     
@@ -412,7 +392,6 @@ def corp_transactions():
 @app.route('/corp/contracts', methods=['GET'])
 @login_required
 def corp_contracts():
-
     contracts = corp.contracts()[0]
 
     return render_template('corp/contracts.html', contracts=contracts)

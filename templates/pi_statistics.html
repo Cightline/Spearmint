@@ -16,7 +16,6 @@ $(document).ready( function() { $('#{{ key.lower() }}').dataTable( { "bPaginate"
     <div class="col-md-4">
         <h4>System: {{ key.capitalize() }} </h4>
         <small>Cached at: {{ results[key]['cached_time'] }} </small>
-            {# We just need one "date" #}
             <table class="display" id="{{ key }}">
                 <thead>
                     <tr>

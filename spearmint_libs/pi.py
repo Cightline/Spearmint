@@ -34,7 +34,7 @@ class StorePi(Base):
 
 class Pi():
     def __init__(self, config, utils_obj):
-        logging.basicConfig(filename=config['general']['log_path'], level=logging.DEBUG)
+        logging.basicConfig(filename='%s/log' % (config['log_path']), level=logging.DEBUG)
 
         self.store_engine = create_engine(config['database']['pi_db'])
        
@@ -49,7 +49,7 @@ class Pi():
         self.base.prepare(engine, reflect=True)
         self.session = Session(engine)
 
-        material_file_path = '%s/constants/planet_materials.json' % (config['general']['install_dir'])
+        material_file_path = '%s/constants/planet_materials.json' % (config['general']['base_dir'])
         
         with open(material_file_path) as material_file:
             planet_materials = json.load(material_file)
