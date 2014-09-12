@@ -6,11 +6,12 @@
     <div class="col-md-4">
         <div class="col-xs-9">
             <h4>{{ info }}</h4>
-        
-            <form role="form" action="/">
-            <div class="form-group">
-                <button type="submit" class="btn btn-default" value="submit">Home</button>
-            </form>
+            <br>
+            {% if home_button is defined %}
+            <button type="default" class="btn btn-default" onClick="javascript:window.location.href='/'">Home</button>
+            {% else %}
+            <button type="default" class="btn btn-default" onClick="history.go(-1)">Back</button>
+            {% endif %}
         </div>
     </div>
 </div>

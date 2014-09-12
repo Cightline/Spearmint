@@ -107,6 +107,7 @@ def check_auth(email, password):
         if check_password_hash(query.password, password) == True:
             logging.info('[check_auth] correct password for: %s' % (query.email))
             return True
+
         else:
             logging.info('[check_auth] incorrect password for: %s' % (query.email))
     else:
@@ -130,27 +131,26 @@ def login():
         return render_template('info.html', info='You are already logged in')
     
     if request.method == 'POST':
+        email    = request.form.get('email')
+        password = request.form.get('password')
         
-        if check_auth(request.form.get('email'), request.form.get('password')) == True:
-            to_login = load_user(request.form.get('email'))
+        if check_auth(email, password) != True:
+            return render_template('info.html', info='Incorrect email or password')
+
+        to_login = load_user(email)
             
-            if login_user(to_login):
-                logging.info('[login] logged in: %s' % (current_user.email))
+        if login_user(to_login):
+            logging.info('[login] logged in: %s' % (current_user.email))
                 
+            # Fix this, it needs to actually redirect. 
+            next_page = request.form.get('next')
 
-                # Fix this, it needs to actually redirect. 
-                next_page = request.form.get('next')
+            if next_page:
+                return redirect(next_page)
 
-                if next_page:
-                    return redirect(next_page)
+            else:
+                return redirect('/')
 
-                else:
-                    return redirect('/')
-                
-        else:
-            return render_template('info.html', info='Incorrect email/password combination')
-
-    
     return render_template('login.html')
 
 
@@ -158,7 +158,7 @@ def login():
 def logout():
     if current_user.is_authenticated():
         logout_user()
-        return render_template('info.html', info='Successfully logged out')
+        return render_template('info.html', info='Successfully logged out', home_button=True)
 
     return render_template('info.html', info='You are not logged in')
 
