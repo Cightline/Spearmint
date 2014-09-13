@@ -9,7 +9,10 @@
 {% for key in results.keys() %}
 
 <script type="text/javascript">
-$(document).ready( function() { $('#{{ key.lower() }}').dataTable( { "bPaginate": false } ); } )
+$(document).ready( function() { $('#{{ key.lower() }}').dataTable({ 
+    "bPaginate": false,
+    "searching":false
+} ); } )
 </script>
 
 
