@@ -51,10 +51,10 @@
       </ul>
       <ul class="nav navbar-nav navbar-right">
           {% if current_user.email %}
-            <a href="/logout" class="btn btn-default navbar-btn navbar-right">Sign out</a>
+            <li><a href="/logout">Sign out</a></li>
           {% else %}
-            <a href="/login" class="btn btn-default navbar-btn navbar-right">Sign in</a>
-            <a href="/register" class="btn btn-default navbar-btn navbar-right">Register</a>
+          <li><a href="/login">Sign in</a></li>
+          <li><a href="/register">Register</a></li>
           {% endif %}
       </ul>
     </div><!-- /.navbar-collapse -->
