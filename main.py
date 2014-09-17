@@ -61,8 +61,8 @@ app.config['corp_id']  = corp.corporation_sheet()[0]['id']
 
 utils = Utils(app.config)
 pi    = Pi(app.config, utils)
-cache = Cache(app,config={'CACHE_DIR':'%s/cache' % (app.config['general']['base_dir']), 'CACHE_TYPE': app.config['general']['cache_type']})
-
+cache = Cache(app,config={'CACHE_DIR':'%s/cache' % (app.config['general']['base_dir']), 
+                          'CACHE_TYPE': app.config['general']['cache_type']})
 
 @cache.memoize()
 def character_name_from_id(id_):
@@ -188,18 +188,17 @@ def register():
                     del characters.result[c]
                
             # Check to see if we still have any characters left. 
-            if characters.result:
-                logging.info('[register] characters.result: %s' % characters.result)
-
-                session['characters']  = characters.result
-                session['api_code']    = code
-                session['api_key_id']  = keyid
-
-                return redirect(url_for('confirm_register'))
-
-            else:
+            if not characters.result:
                 return render_template('info.html', info='None of your characters are in the corporation')
-    
+                
+            logging.info('[register] characters.result: %s' % characters.result)
+
+            session['characters']  = characters.result
+            session['api_code']    = code
+            session['api_key_id']  = keyid
+
+            return redirect(url_for('confirm_register'))
+
     return render_template('register.html', form=RegisterForm())
 
 
@@ -223,8 +222,6 @@ def confirm_register():
             if request.form.get('register_email') == query.email:
                 return render_template('info.html', info='You have already registered')
 
-
-        
         # Add the user to the db and generate the password hash.
         activation_code = generate_code()
         
@@ -312,6 +309,7 @@ def reset_password():
 def user_settings():
     return render_template('user/index.html')
 
+
 @app.route('/user/settings/password', methods=['POST', 'GET'])
 @login_required
 def user_change_password():
@@ -364,10 +362,10 @@ def pi_statistics(tier):
 
     for system_name in systems:
         system = utils.search_system(system_name)
-        data = pi.get_prices(tier, system['solarSystemID'])
+        data = pi.get_prices(tier, system.solarSystemID)
 
         if data:
-            results[system['solarSystemName'].lower()] = {"data":data, "cached_time":data[0].date}
+            results[system.solarSystemName.lower()] = {"data":data, "cached_time":data[0].date}
 
     return render_template('pi_statistics.html', results=results)
 

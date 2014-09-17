@@ -115,14 +115,13 @@ class Pi():
             count += 1
             logging.info('storing PI information from system: %s, tier: %s -- %s of %s' % (system, tier, count, len(ids)))
 
-            item = self.utils.lookup_typeName(id_)['typeName']
+            item = self.utils.lookup_typename(id_).typeName
             data = {'typeid':id_, 'usesystem':system}
             page = requests.get(self.ec_url, params=data)
 
             if page.status_code != 200:
                 logging.warning('page.status_code is %s, expecting 200' % (page.status_code))
                 return False
-
 
             root = ET.fromstring(page.text)
             
@@ -139,6 +138,6 @@ class Pi():
                 store_session.add(to_store)
                 store_session.commit()
                 
-                prices[float(maximum)] = self.utils.lookup_typeName(id_)['typeName']
+                prices[float(maximum)] = self.utils.lookup_typename(id_).typeName
                 break
         
