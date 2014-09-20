@@ -34,7 +34,7 @@ class StorePi(Base):
 
 class Pi():
     def __init__(self, config, utils_obj):
-        logging.basicConfig(filename='%s/log' % (config['log_path']), level=logging.DEBUG)
+        logging.basicConfig(filename='%s/log' % (config['general']['base_dir']), level=logging.DEBUG)
 
         self.store_engine = create_engine(config['database']['pi_db'])
        
@@ -73,10 +73,11 @@ class Pi():
         return False
 
     def get_prices(self, tier, system):
+        '''Returns a sqlalchemy "StorePi" object with the prices from the database'''
         Session = sessionmaker(bind=self.store_engine)
         store_session = Session()
 
-        query =  store_session.query(StorePi).filter_by(system=system, tier=tier).order_by(StorePi.iteration.desc()).first() or None
+        query =  store_session.query(StorePi).filter_by(system=system, tier=tier).order_by(StorePi.date.desc()).first() or None
 
         if query:
             iteration = query.iteration
@@ -136,8 +137,8 @@ class Pi():
                                    iteration=iteration) 
 
                 store_session.add(to_store)
-                store_session.commit()
                 
                 prices[float(maximum)] = self.utils.lookup_typename(id_).typeName
                 break
         
+        store_session.commit()

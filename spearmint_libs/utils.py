@@ -35,10 +35,14 @@ class Utils():
         #Base.classes.invTypes is the table, typeName is the column
         q = self.session.query(self.base.classes.invTypes.typeName).filter_by(typeID=id)
 
-        return q.first() or None
+        result = q.first()
 
+        if result:
+            return result[0]
     
-    def search_system(self, name):
+        return None
+        
+    def lookup_system(self, name):
         query = self.session.query(self.base.classes.mapSolarSystems).filter(
             self.base.classes.mapSolarSystems.solarSystemName.like(name))
        

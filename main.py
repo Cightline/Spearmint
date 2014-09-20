@@ -20,9 +20,11 @@ from wtforms import TextField
 from werkzeug.security import generate_password_hash, check_password_hash
 
 import evelink.api
+import requests
 
 from spearmint_libs.utils import Utils, format_time, format_currency, generate_code
 from spearmint_libs.pi    import Pi
+from spearmint_libs.losses import Losses
 from spearmint_libs.auth  import Auth
 from spearmint_libs.user  import db, User, Character
 from spearmint_libs.emailtools import EmailTools
@@ -77,7 +79,9 @@ app.jinja_env.filters['format_time'] = format_time
 app.jinja_env.filters['format_currency'] = format_currency
 app.jinja_env.filters['character_name_from_id'] = character_name_from_id
 app.jinja_env.filters['corp_name_from_corp_id'] = corp_name_from_corp_id
+app.jinja_env.filters['lookup_typename'] = utils.lookup_typename
 
+losses = Losses(config)
 
 class RegisterForm(Form):
     keyid = TextField('KeyID')
@@ -361,7 +365,7 @@ def pi_statistics(tier):
     systems = ['jita', 'amarr']
 
     for system_name in systems:
-        system = utils.search_system(system_name)
+        system = utils.lookup_system(system_name)
         data = pi.get_prices(tier, system.solarSystemID)
 
         if data:
@@ -393,6 +397,58 @@ def corp_contracts():
     contracts = corp.contracts()[0]
 
     return render_template('corp/contracts.html', contracts=contracts)
+
+
+@app.route('/corp/statistics/items_lost', methods=['GET'])
+@login_required
+@cache.memoize()
+def corp_items_lost():
+    items_lost = {}
+
+    for count in range(10):
+        kb_url = 'https://zkillboard.com/api/kills/allianceID/%s/page/%s/' % (corp.corporation_sheet()[0]['alliance']['id'], count)
+
+        data = json.loads(requests.get(kb_url).text)
+
+
+        for row in data:
+            for line in row['items']:
+                item = utils.lookup_typename(line['typeID'])[0]
+
+                if item not in items_lost:
+                    items_lost[item] = 1
+
+                else:
+                    items_lost[item] += 1
+
+
+    return render_template('corp/items_lost.html', items_lost=items_lost)
+
+
+@cache.memoize()
+@app.route('/corp/statistics/ships_lost', methods=['GET'])
+@login_required
+def corp_ships_lost():
+
+    ships_lost = {}
+    query = losses.session.query(losses.base.classes.kills).all()
+
+    for ship in query:
+        ship_name = utils.lookup_typename(ship.shipTypeID)
+
+        if not ship_name:
+            continue
+
+        if ship_name not in ships_lost:
+            ships_lost[ship_name] = 1
+
+        else:
+            ships_lost[ship_name] += 1
+        
+
+
+    return render_template('corp/statistics/ships_lost.html',  ships_lost=ships_lost)
+
 
 
 if __name__ == '__main__':
