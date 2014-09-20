@@ -62,7 +62,7 @@ class Command():
         alliance_id = self.corp.corporation_sheet()[0]['alliance']['id']
 
         for count in range(self.args.losses):
-            kb_url =  'https://zkillboard.com/api/kills/allianceID/%s/page/%s/' % (alliance_id, count)
+            kb_url =  'https://zkillboard.com/api/kills/allianceID/%s/page/%s/losses/' % (alliance_id, count)
             
             data = json.loads(requests.get(kb_url).text)
 
@@ -78,7 +78,10 @@ class Command():
                     print('killID already exists, skipping')
                     continue
                
-                kill = Kills(killID=kill_id, shipTypeID=row['victim']['shipTypeID'], killTime=kill_time)
+                kill = Kills(killID=kill_id, 
+                             shipTypeID=row['victim']['shipTypeID'], 
+                             killTime=kill_time,
+                             characterID=row['victim']['characterID'])
 
                 for line in row['items']:
                     print('storing item: %s' % (self.utils.lookup_typename(line['typeID'])))

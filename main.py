@@ -6,7 +6,7 @@ import json
 import datetime
 import hashlib
 
-from urllib.parse import urlencode
+from urllib.parse import quote
 from functools    import wraps
 
 from flask import Flask, render_template, request, redirect, session, url_for, escape, Response
@@ -80,6 +80,7 @@ app.jinja_env.filters['format_currency'] = format_currency
 app.jinja_env.filters['character_name_from_id'] = character_name_from_id
 app.jinja_env.filters['corp_name_from_corp_id'] = corp_name_from_corp_id
 app.jinja_env.filters['lookup_typename'] = utils.lookup_typename
+app.jinja_env.filters['quote'] = quote
 
 losses = Losses(config)
 
@@ -425,19 +426,35 @@ def corp_items_lost():
     return render_template('corp/items_lost.html', items_lost=items_lost)
 
 
-@cache.memoize()
+
+
 @app.route('/corp/statistics/ships_lost', methods=['GET'])
 @login_required
 def corp_ships_lost():
 
-    ships_lost = {}
+    # If the user clicks on a specific ship
+    if 'ship' in request.args:
+        ship_name = request.args.get('ship')
+        ship_id   = utils.lookup_typeid(ship_name)
+
+        if not ship_id:
+            return render_template('info.html', info='Ship not found')
+
+
+        query = losses.session.query(losses.base.classes.kills).filter_by(shipTypeID=ship_id).all()
+
+        return render_template('corp/statistics/ships_lost_details.html', data=query, ship_name=ship_name, ship_id=ship_id)
+        
+
+
+
+
     query = losses.session.query(losses.base.classes.kills).all()
 
-    for ship in query:
-        ship_name = utils.lookup_typename(ship.shipTypeID)
+    ships_lost = {}
 
-        if not ship_name:
-            continue
+    for ship in query:
+        ship_name = utils.lookup_typename(ship.shipTypeID) or 'NA'
 
         if ship_name not in ships_lost:
             ships_lost[ship_name] = 1

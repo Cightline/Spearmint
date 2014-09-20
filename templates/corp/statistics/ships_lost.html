@@ -29,7 +29,7 @@ $(document).ready( function() {
                 <tbody>
                 {% for ship in ships_lost %}
                 <tr>
-                        <td> {{ ship }} </td>
+                    <td><a href="/corp/statistics/ships_lost?ship={{ ship|quote }}">{{ ship }}</a> </td>
                         <td> {{ ships_lost[ship] }} </td>
                 </tr>
                 {% endfor %}

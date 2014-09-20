@@ -41,7 +41,17 @@ class Utils():
             return result[0]
     
         return None
-        
+    
+    def lookup_typeid(self, name):
+        q = self.session.query(self.base.classes.invTypes.typeID).filter_by(typeName=name)
+
+        result = q.first()
+
+        if result:
+            return result[0]
+
+        return None
+
     def lookup_system(self, name):
         query = self.session.query(self.base.classes.mapSolarSystems).filter(
             self.base.classes.mapSolarSystems.solarSystemName.like(name))

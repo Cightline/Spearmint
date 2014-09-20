@@ -21,6 +21,7 @@ class Kills(Base):
     shipTypeID = Column(Integer)
     killTime   = Column(DateTime)
     killID     = Column(Integer, unique=True)
+    characterID = Column(Integer)
     items      = relationship('ItemsLost', backref='kills', lazy='dynamic')
 
 
