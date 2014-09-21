@@ -117,6 +117,9 @@ def load_user(id):
     return query or None
 
 
+def info(info):
+    return render_template('info.html', info=info)
+
 @app.route('/login', methods=['POST','GET'])
 def login():
     if current_user.is_authenticated():
@@ -444,12 +447,24 @@ def corp_ships_lost():
         query = losses.session.query(losses.base.classes.kills).filter_by(shipTypeID=ship_id).all()
 
         return render_template('corp/statistics/ships_lost_details.html', data=query, ship_name=ship_name, ship_id=ship_id)
-        
+       
+
+    days = 0
+
+    if 'days' in request.args:
+        try:
+            days = int(request.args.get('days'))
+        except:
+            info('Incorrect amount of days entered')
 
 
 
+    current_time = datetime.datetime.utcnow() 
+    days_ago    = current_time - datetime.timedelta(days=days) 
 
-    query = losses.session.query(losses.base.classes.kills).all()
+    
+
+    query = losses.session.query(losses.base.classes.kills).filter(losses.base.classes.kills.killTime > days_ago).all()
 
     ships_lost = {}
 

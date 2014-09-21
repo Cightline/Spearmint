@@ -9,6 +9,18 @@ $(document).ready( function() {
 <div class="container-fluid">
 
 <div class="row">
+    <div class="col-md-4">
+        <form role="form" action="/corp/statistics/ships_lost" id="submit_query">
+            
+            <div class="form-group">
+                <label for="days">Days</label>
+                <input type="text" class="form-control" id="days" placeholder="days" name="days">
+            </div>
+                
+                <button type="submit" class="btn btn-default" value="submit">Update</button>
+            </div>
+        </form>
+
     <div class="col-md-12">
             
             <a href='/corp/items_lost'>Items Lost</a>
@@ -16,6 +28,10 @@ $(document).ready( function() {
             <a href='/corp/ships_lost'>Ships Lost</a>
             <br>
             <br>
+
+            {# Days #}
+
+
 
             {# We just need one "date" #}
             <table class="table table-striped table-bordered" cellspacing="0" width="100%" id="table">
