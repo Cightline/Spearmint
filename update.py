@@ -30,10 +30,9 @@ class Command():
 
         parser = argparse.ArgumentParser()
         parser.add_argument('--pi',        help='update the PI cache',  action='store_true')
-
-        parser.add_argument('--losses',    help='update the items and ships that have been destroyed', 
-                                           action='store', type=int)
-        parser.add_argument('--create-db',    help='create the databases', action='store_true')
+        parser.add_argument('--losses',    help='update the items and ships that have been destroyed', action='store', type=int)
+        parser.add_argument('--create-db', help='create the databases', action='store_true')
+        parser.add_argument('--start',     help='page to start at for updating losses', action='store', type=int)
         self.args = parser.parse_args()
 
         if self.args.pi:
@@ -52,7 +51,11 @@ class Command():
 
             return config
 
+    def display_completion(self, percentage):
+        print(int(percentage))
+
     def update_losses(self):
+        print('Updating losses...')
         session = sessionmaker(bind=self.losses_engine)
         # Why does "session()"  seem so confusing
         losses_session = session()
@@ -61,12 +64,23 @@ class Command():
         items_lost  = {}
         alliance_id = self.corp.corporation_sheet()[0]['alliance']['id']
 
-        for count in range(self.args.losses):
+        if self.args.start:
+            start_page = self.args.start
+
+        else:
+            start_page = 0
+
+        for count in range(start_page, self.args.losses):
+            print('Page %s of %s' % (count, self.args.losses))
+
             kb_url =  'https://zkillboard.com/api/kills/allianceID/%s/page/%s/losses/' % (alliance_id, count)
             
             data = json.loads(requests.get(kb_url).text)
-
+          
             for row in data:
+                # I'm putting row_count up here because its possible to already have the kill in the db. 
+
+                #self.display_completion(row_count)
                 # 'killTime': '2014-09-19 21:27:00'
                 time_format = '%Y-%m-%d %H:%M:%S'
                 kill_time = datetime.datetime.strptime(row['killTime'], time_format)
@@ -75,7 +89,7 @@ class Command():
                 query = losses_session.query(Kills).filter_by(killID=kill_id).first()
 
                 if query:
-                    print('killID already exists, skipping')
+                    #print('killID already exists, skipping')
                     continue
                
                 kill = Kills(killID=kill_id, 
@@ -84,14 +98,15 @@ class Command():
                              characterID=row['victim']['characterID'])
 
                 for line in row['items']:
-                    print('storing item: %s' % (self.utils.lookup_typename(line['typeID'])))
+                    #print('storing item: %s' % (self.utils.lookup_typename(line['typeID'])))
                     kill.items.append(ItemsLost(typeID=line['typeID']))
 
 
-                print('storing ship: %s' % (self.utils.lookup_typename(row['victim']['shipTypeID'])))
+                #print('storing ship: %s' % (self.utils.lookup_typename(row['victim']['shipTypeID'])))
                 
                 losses_session.add(kill) 
                 losses_session.commit()
+
             
 
     def update_pi(self):

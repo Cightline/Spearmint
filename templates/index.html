@@ -3,7 +3,11 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-md-8">
-                <h5>The basic site functions (email, registration, password recovery, etc..) are completed, now I can work on tools.</h5>
+            {% if current_user.email %}
+                <h5>Welcome</h5>
+            {% else %}
+                <h5>Nothing to see here.</h5>
+            {% endif %}
         </div>
     </div>
 </div>

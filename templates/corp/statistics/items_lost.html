@@ -9,13 +9,29 @@ $(document).ready( function() {
 <div class="container-fluid">
 
 <div class="row">
+    <div class="col-md-4">
+        <form role="form" action="/corp/statistics/ships_lost" id="submit_query">
+            
+            <div class="form-group">
+                <label for="days">Days</label>
+                {% if days %}
+                    <input type="text" class="form-control" id="days" placeholder={{ days }} name="days">
+                {% else %}
+                    <input type="text" class="form-control" id="days" placeholder="days" name="days">
+                {% endif %}
+            </div>
+                
+                <button type="submit" class="btn btn-default" value="submit">Update</button>
+            </div>
+        </form>
+
     <div class="col-md-12">
-        
-                  <a href='/corp/items_lost'>Items Lost</a>
-                  <br>
-                  <a href='/corp/ships_lost'>Ships Lost</a>
-                  <br>
-                  <br>
+            
+            <a href='/corp/items_lost'>Items Lost</a>
+            <br>
+            <br>
+
+            {# Days #}
 
 
 
@@ -23,16 +39,16 @@ $(document).ready( function() {
             <table class="table table-striped table-bordered" cellspacing="0" width="100%" id="table">
                 <thead>
                     <tr>
-                        <th>Item Lost</th>
+                        <th>Ship Lost</th>
                         <th class="text-right">Quantity</th>
                     </tr>
                         
                 </thead>
                 <tbody>
-                {% for item in items_lost %}
+                {% for ship in ships_lost %}
                 <tr>
-                        <td> {{ item }} </td>
-                        <td> {{ items_lost[item] }} </td>
+                    <td><a href="{{ url_for('corp_ships_lost_details', days=days, ship=ship) }} ">{{ ship }}</a> </td>
+                        <td> {{ ships_lost[ship] }} </td>
                 </tr>
                 {% endfor %}
 

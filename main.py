@@ -64,11 +64,16 @@ app.config['corp_id']  = corp.corporation_sheet()[0]['id']
 utils = Utils(app.config)
 pi    = Pi(app.config, utils)
 cache = Cache(app,config={'CACHE_DIR':'%s/cache' % (app.config['general']['base_dir']), 
+                          'CACHE_DEFAULT_TIMEOUT':10000000000000000,
                           'CACHE_TYPE': app.config['general']['cache_type']})
 
 @cache.memoize()
 def character_name_from_id(id_):
     return eve.character_name_from_id(id_)[0]
+
+# Insecure?
+def character_id_from_name(name):
+    return eve.character_ids_from_names([name])[0][name]
 
 def corp_name_from_corp_id(id_):
     corp_name = eve.affiliations_for_characters(id_)
@@ -362,8 +367,9 @@ def activate_account():
     
     return render_template('info.html', info='Invalid activation code or email')
 
-@app.route('/pi_statistics/<int:tier>', methods=['GET', 'POST'])
-def pi_statistics(tier):
+@app.route('/statistics/pi/<int:tier>', methods=['GET', 'POST'])
+@login_required
+def statistics_pi(tier):
 
     results = {}
     systems = ['jita', 'amarr']
@@ -375,7 +381,7 @@ def pi_statistics(tier):
         if data:
             results[system.solarSystemName.lower()] = {"data":data, "cached_time":data[0].date}
 
-    return render_template('pi_statistics.html', results=results)
+    return render_template('statistics/pi.html', results=results)
 
 
 @app.route('/corp/index', methods=['GET'])
@@ -405,7 +411,6 @@ def corp_contracts():
 
 @app.route('/corp/statistics/items_lost', methods=['GET'])
 @login_required
-@cache.memoize()
 def corp_items_lost():
     items_lost = {}
 
@@ -428,58 +433,107 @@ def corp_items_lost():
 
     return render_template('corp/items_lost.html', items_lost=items_lost)
 
-
-
-
-@app.route('/corp/statistics/ships_lost', methods=['GET'])
+@app.route('/statistics/ships_lost_details', methods=['GET'])
 @login_required
-def corp_ships_lost():
-
-    # If the user clicks on a specific ship
-    if 'ship' in request.args:
-        ship_name = request.args.get('ship')
-        ship_id   = utils.lookup_typeid(ship_name)
-
-        if not ship_id:
-            return render_template('info.html', info='Ship not found')
-
-
-        query = losses.session.query(losses.base.classes.kills).filter_by(shipTypeID=ship_id).all()
-
-        return render_template('corp/statistics/ships_lost_details.html', data=query, ship_name=ship_name, ship_id=ship_id)
-       
-
-    days = 0
+def statistics_ship_losses_details():
+    days = 20
+    character_id = None
 
     if 'days' in request.args:
         try:
             days = int(request.args.get('days'))
         except:
-            info('Incorrect amount of days entered')
+            return info('Incorrect amount of days entered')
+
+    if 'ship' in request.args:
+        ship_name = request.args.get('ship')
+        ship_id   = utils.lookup_typeid(ship_name)
+
+        if not ship_id:
+            info('Ship not found') 
+    if 'character' in request.args:
+        character = request.args.get('character')
+        if character != 'all':
+            try:
+                character_id = int(character_id_from_name(request.args.get('character')))
+            except:
+                return info('Unable to find character')
 
 
 
     current_time = datetime.datetime.utcnow() 
-    days_ago    = current_time - datetime.timedelta(days=days) 
-
+    days_ago     = current_time - datetime.timedelta(days=days) 
     
+    if character_id:
+        query = losses.session.query(losses.base.classes.kills).filter(losses.base.classes.kills.killTime > days_ago).filter_by(characterID=character_id, shipTypeID=ship_id).all()
+    
+    else:
+        query = losses.session.query(losses.base.classes.kills).filter(losses.base.classes.kills.killTime > days_ago).filter_by(shipTypeID=ship_id).all()
+    
+    return render_template('statistics/ship_losses_details.html', data=query, ship_name=ship_name, ship_id=ship_id)
 
-    query = losses.session.query(losses.base.classes.kills).filter(losses.base.classes.kills.killTime > days_ago).all()
+
+@app.route('/statistics/ships_lost', methods=['GET'])
+@login_required
+def statistics_ship_losses():
+    current_time = datetime.datetime.utcnow() 
+    days         = 20
+    character_id = None
+    character    = None
+
+    if 'days' in request.args:
+        try:
+            days = int(request.args.get('days'))
+
+        except:
+            return info('Incorrect amount of days entered')
+
+    if 'character' in request.args:
+            character    = request.args.get('character')
+
+            if character != 'all':
+                try:
+                    character_id = int(character_id_from_name(character)) or None
+
+                except:
+                    return info('Unable to find character')
+
+
+    days_ago      = current_time - datetime.timedelta(days=days) 
+    oldest_record = losses.session.query(losses.base.classes.kills).order_by(losses.base.classes.kills.killTime.asc()).first().killTime or None
+
+    if oldest_record:
+        days_stored   = current_time - oldest_record
+
+    else:
+        days_stored = 'N/A'
+   
+    if character_id:
+        query = losses.session.query(losses.base.classes.kills).filter(losses.base.classes.kills.killTime > days_ago).filter_by(characterID=character_id).all()
+
+    else:
+        query = losses.session.query(losses.base.classes.kills).filter(losses.base.classes.kills.killTime > days_ago).all()
+
 
     ships_lost = {}
 
     for ship in query:
+
         ship_name = utils.lookup_typename(ship.shipTypeID) or 'NA'
+
+        if character_id:
+            if character_id != ship.characterID:
+                continue
 
         if ship_name not in ships_lost:
             ships_lost[ship_name] = 1
 
         else:
             ships_lost[ship_name] += 1
-        
+       
+    total_ships_lost = len(query)
 
-
-    return render_template('corp/statistics/ships_lost.html',  ships_lost=ships_lost)
+    return render_template('statistics/ship_losses.html',  ships_lost=ships_lost, days=days, oldest_record=oldest_record, days_stored=days_stored.days, character=character, total_ships_lost=total_ships_lost)
 
 
 

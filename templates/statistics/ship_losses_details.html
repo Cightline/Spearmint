@@ -3,7 +3,7 @@
 
 <script type="text/javascript">
 $(document).ready( function() {
-      $('#table').dataTable( { "iDisplayLength": 100 } ); } )
+      $('#table').dataTable( { "iDisplayLength":100, "order": [[ 0, "desc" ]] } ); } )
 </script>
 
 <div class="container-fluid">
@@ -26,9 +26,10 @@ $(document).ready( function() {
                 {% for row in data %}
                     <tr>
                         {# key is the price, the value is the item name #}
+                        {% set character = row['characterID']|character_name_from_id %}
                         <td> {{ row['killTime'] }}        </td>
-                        <td> {{ row['characterID']|character_name_from_id }}  </td>
-                        <td> <a href="https://zkillboard.com/kill/{{ row['killID'] }}">Killboard</a> </td>
+                        <td> <a href="{{ url_for('statistics_ship_losses', character=character) }}">{{ character }}</a>  </td>
+                        <td> <a href="https://zkillboard.com/kill/{{ row['killID'] }}">{{ row['killID'] }}</a> </td>
                     </tr>
                 {% endfor %}
                 </tbody>

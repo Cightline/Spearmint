@@ -1,0 +1,93 @@
+{% include 'header.html' %}
+{% include 'datatables.html' %}
+
+<script type="text/javascript">
+$(document).ready( function() {
+    $('#table').dataTable( { "iDisplayLength":100, "order": [[1, "desc" ]]  } ); } )
+</script>
+
+<div class="container-fluid">
+
+<div class="row">
+    <div class="col-md-2">
+
+        <font face="monospace">
+        <dl>
+            <dt>Oldest record</dt>
+            <dd>{{ oldest_record }}</dd>
+            <dt>Days stored</dt>
+            <dd>{{ days_stored }}</dd>
+            <dt>Total unique ships lost</dt>
+            <dd>{{ ships_lost.values()|length }}</dt>
+            <dt>Total ships lost</dt>
+            <dd>{{ total_ships_lost }}</dd>
+        </dl>
+        <br>
+
+    </div>
+
+    <div class="col-md-2">
+
+        <form role="form" action="/statistics/ships_lost" id="submit_query">
+            <div class="form-group">
+                <label for="days">Days in the past</label>
+                {% if days %}
+                <input type="text" class="form-control" id="days"  name="days" value={{ days }}>
+                {% else %}
+                    <input type="text" class="form-control" id="days"  name="days">
+                {% endif %}
+
+                <label for="character">Character</label>
+                {% if character %}
+                <input type="text" class="form-control" id="character"  name="character" value="{{ character }}">
+                {% else %}
+                <input type="text" class="form-control" id="character"  name="character" value="all">
+                {% endif %}
+
+            </div>
+                
+                <button type="submit" class="btn btn-default" value="submit">Update</button>
+        </form>
+
+        </font>
+    </div>
+
+
+
+    <div class="col-md-12">
+            
+            <a href='/corp/items_lost'>Items Lost</a>
+            <br>
+            <br>
+
+            {# Days #}
+
+
+
+            {# We just need one "date" #}
+            <table class="table table-striped table-bordered" cellspacing="0" width="100%" id="table">
+                <thead>
+                    <tr>
+                        <th>Ship Lost</th>
+                        <th class="text-right">Quantity</th>
+                    </tr>
+                        
+                </thead>
+                <tbody>
+                {% for ship in ships_lost %}
+                <tr>
+                    {% if character %}
+                    <td><a href="{{ url_for('statistics_ship_losses_details', days=days, ship=ship, character=character) }} ">{{ ship }}</a> </td>
+                    {% else %}
+                    <td><a href="{{ url_for('statistics_ship_losses_details', days=days, ship=ship) }} ">{{ ship }}</a> </td>
+                    {% endif %}
+
+                        <td> {{ ships_lost[ship] }} </td>
+                </tr>
+                {% endfor %}
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
