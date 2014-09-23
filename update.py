@@ -1,5 +1,5 @@
 import argparse
-import json
+import json 
 import datetime
 
 import requests
@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from spearmint_libs.pi     import Pi
 from spearmint_libs.utils  import Utils, format_time
-from spearmint_libs.losses import Kills, ItemsLost
+from spearmint_libs.sql.db_connect import Connect
 
 import evelink
 
@@ -23,9 +23,6 @@ class Command():
         self.eve    = evelink.eve.EVE()
         self.corp_api = evelink.api.API(api_key=(self.config['corp_api']['key'], self.config['corp_api']['code']))
         self.corp     = evelink.corp.Corp(self.corp_api)
-
-
-        self.losses_engine = create_engine(self.config['database']['losses'], convert_unicode=True)
 
 
         parser = argparse.ArgumentParser()
@@ -56,12 +53,9 @@ class Command():
 
     def update_losses(self):
         print('Updating losses...')
-        session = sessionmaker(bind=self.losses_engine)
-        # Why does "session()"  seem so confusing
-        losses_session = session()
-        losses_session._model_changes = {}
 
-        items_lost  = {}
+        losses      = Connect(self.config['database']['losses_db'])
+        items_lost_  = {}
         alliance_id = self.corp.corporation_sheet()[0]['alliance']['id']
 
         if self.args.start:
@@ -86,26 +80,28 @@ class Command():
                 kill_time = datetime.datetime.strptime(row['killTime'], time_format)
                 kill_id   = row['killID']
 
-                query = losses_session.query(Kills).filter_by(killID=kill_id).first()
+                query = losses.session.query(losses.base.classes.kills).filter_by(killID=kill_id).first()
 
                 if query:
                     #print('killID already exists, skipping')
                     continue
                
-                kill = Kills(killID=kill_id, 
+                kill = losses.base.classes.kills(killID=kill_id, 
                              shipTypeID=row['victim']['shipTypeID'], 
                              killTime=kill_time,
                              characterID=row['victim']['characterID'])
 
+
                 for line in row['items']:
                     #print('storing item: %s' % (self.utils.lookup_typename(line['typeID'])))
-                    kill.items.append(ItemsLost(typeID=line['typeID']))
+                    item = losses.base.classes.items_lost(typeID=line['typeID'])
+                    kill.items_lost_collection.append(item)
 
 
                 #print('storing ship: %s' % (self.utils.lookup_typename(row['victim']['shipTypeID'])))
                 
-                losses_session.add(kill) 
-                losses_session.commit()
+                losses.session.add(kill) 
+                losses.session.commit()
 
             
 
@@ -122,7 +118,7 @@ class Command():
 
     def create_databases(self):
         # Losses
-        Kills().metadata.create_all(self.losses_engine)
+        Kills().metadata.create_all(self.losses)
 
        
 
