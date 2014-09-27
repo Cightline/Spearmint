@@ -1,15 +1,10 @@
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, Time, DateTime, create_engine, ForeignKey, Boolean
-from sqlalchemy.orm import Session, backref, relationship
-
-
-Base = declarative_base()
+from spearmint_libs.sql import *
 
 class Character(Base):
     __tablename__ = 'characters'
     id           = Column(Integer, primary_key=True)
     character_id = Column(Integer)
-    user_id      = Column(Integer, ForeignKey('user.id'))
+    user_id      = Column(Integer, ForeignKey('users.id'))
 
 
 class Users(Base):
