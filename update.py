@@ -4,10 +4,10 @@ import datetime
 
 import requests
 
-from sqlalchemy     import create_engine
+from sqlalchemy import *
 from sqlalchemy.orm import Session, sessionmaker
 
-from spearmint_libs.pi     import Pi
+from spearmint_libs.pi_utils     import PiUtils
 from spearmint_libs.utils  import Utils, format_time
 from spearmint_libs.sql.db_connect import Connect
 
@@ -19,10 +19,11 @@ class Command():
     def __init__(self):
         self.config = self.read_config()
         self.utils  = Utils(self.config)
-        self.pi     = Pi(self.config, self.utils)
+        self.pi_utils = PiUtils(self.config, self.utils)
         self.eve    = evelink.eve.EVE()
         self.corp_api = evelink.api.API(api_key=(self.config['corp_api']['key'], self.config['corp_api']['code']))
         self.corp     = evelink.corp.Corp(self.corp_api)
+        self.db       = Connect(self.config['database']['data'])
 
 
         parser = argparse.ArgumentParser()
@@ -54,7 +55,7 @@ class Command():
     def update_losses(self):
         print('Updating losses...')
 
-        losses      = Connect(self.config['database']['losses_db'])
+        losses      = self.db
         items_lost_  = {}
         alliance_id = self.corp.corporation_sheet()[0]['alliance']['id']
 
@@ -79,13 +80,14 @@ class Command():
                 time_format = '%Y-%m-%d %H:%M:%S'
                 kill_time = datetime.datetime.strptime(row['killTime'], time_format)
                 kill_id   = row['killID']
-
+                
                 query = losses.session.query(losses.base.classes.kills).filter_by(killID=kill_id).first()
 
                 if query:
                     #print('killID already exists, skipping')
                     continue
-               
+    
+        
                 kill = losses.base.classes.kills(killID=kill_id, 
                              shipTypeID=row['victim']['shipTypeID'], 
                              killTime=kill_time,
@@ -112,15 +114,20 @@ class Command():
             system = self.utils.lookup_system(system_name).__dict__
 
         for tier in self.config['statistics']['pi_tiers']:
-            self.pi.store_prices(tier, system['solarSystemID'])
+            self.pi_utils.store_prices(tier, system['solarSystemID'])
                 
         print('Done')
 
     def create_databases(self):
-        # Losses
-        Kills().metadata.create_all(self.losses)
+        # You must import the metadata file, then connect it to the engine, otherwise
+        # it will create a db with no tables. 
+        from spearmint_libs.sql import initialize_sql
+        from spearmint_libs.sql.losses import ItemsLost, Kills
+        from spearmint_libs.sql.users  import Users, Character
+        from spearmint_libs.sql.pi     import Pi
 
-       
+        initialize_sql(self.db.engine)
+
 
 
 if __name__ == '__main__':
