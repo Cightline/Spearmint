@@ -14,7 +14,7 @@ class LossesUtils():
     
     def query(self, characterID=None, shipTypeID=None, days_ago=1000):
         if characterID and shipTypeID:
-            return self.db.session.query(self.classes.kills).filter(self.classes.kills.killTime > days_ago).filter_by(characterID=characterID, shipeTypeID=shipTypeID).all()
+            return self.db.session.query(self.classes.kills).filter(self.classes.kills.killTime > days_ago).filter_by(characterID=characterID, shipTypeID=shipTypeID).all()
 
         elif characterID:
             return self.db.session.query(self.classes.kills).filter(self.classes.kills.killTime > days_ago).filter_by(characterID=characterID).all()
