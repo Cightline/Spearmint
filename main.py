@@ -23,10 +23,10 @@ import evelink.api
 import requests
 
 from spearmint_libs.utils import Utils, format_time, format_currency, generate_code
-from spearmint_libs.pi    import Pi
-from spearmint_libs.losses import Losses
+from spearmint_libs.pi_utils    import PiUtils
+from spearmint_libs.losses_utils import LossesUtils
 from spearmint_libs.auth  import Auth
-from spearmint_libs.user  import db, User, Character
+from spearmint_libs.user_utils  import User
 from spearmint_libs.emailtools import EmailTools
 
 
@@ -44,10 +44,8 @@ app.config.update(config)
 
 app.config['DEBUG'] = False
 app.config['SECRET_KEY']              = os.urandom(1488)
-app.config['SQLALCHEMY_DATABASE_URI'] = app.config['database']['uri']
+app.config['SQLALCHEMY_DATABASE_URI'] = app.config['database']['data']
 app.config['log_path'] = '%s/log' % (app.config['general']['base_dir'])
-
-db.init_app(app)
 
 login_manager  = LoginManager()
 login_manager.login_view = 'login'
@@ -61,11 +59,12 @@ corp     = evelink.corp.Corp(corp_api)
 app.config['corp_id']  = corp.corporation_sheet()[0]['id']
 
 
-utils = Utils(app.config)
-pi    = Pi(app.config, utils)
-cache = Cache(app,config={'CACHE_DIR':'%s/cache' % (app.config['general']['base_dir']), 
-                          'CACHE_DEFAULT_TIMEOUT':10000000000000000,
-                          'CACHE_TYPE': app.config['general']['cache_type']})
+utils =  Utils(app.config)
+losses = LossesUtils(app.config)
+pi    =  PiUtils(app.config, utils)
+cache =  Cache(app,config={'CACHE_DIR':'%s/cache' % (app.config['general']['base_dir']), 
+                           'CACHE_DEFAULT_TIMEOUT':10000000000000000,
+                           'CACHE_TYPE': app.config['general']['cache_type']})
 
 @cache.memoize()
 def character_name_from_id(id_):
@@ -87,7 +86,7 @@ app.jinja_env.filters['corp_name_from_corp_id'] = corp_name_from_corp_id
 app.jinja_env.filters['lookup_typename'] = utils.lookup_typename
 app.jinja_env.filters['quote'] = quote
 
-losses = Losses(config)
+user = User(config)
 
 class RegisterForm(Form):
     keyid = TextField('KeyID')
@@ -102,7 +101,8 @@ class UserChangePassword(Form):
 
 
 def check_auth(email, password):
-    query = User.query.filter_by(email=email).first()
+    query = user.lookup_user(email)
+
     if query:
         if check_password_hash(query.password, password) == True:
             logging.info('[check_auth] correct password for: %s' % (query.email))
@@ -118,8 +118,7 @@ def check_auth(email, password):
 
 @login_manager.user_loader 
 def load_user(id):
-    query = User.query.filter_by(email=id).first()
-    return query or None
+    return user.load_user(id) or None
 
 
 def info(info):
@@ -137,10 +136,14 @@ def login():
         if check_auth(email, password) != True:
             return render_template('info.html', info='Incorrect email or password')
 
+
         to_login = load_user(email)
+
+        if not to_login:
+            return render_template('info.html', info='unable to log you in')
             
         if login_user(to_login):
-            logging.info('[login] logged in: %s' % (current_user.email))
+            logging.info('[login] logged in: %s' % (current_user.user.email))
                 
             # Fix this, it needs to actually redirect. 
             next_page = request.form.get('next')
@@ -150,6 +153,9 @@ def login():
 
             else:
                 return redirect('/')
+
+        else:
+            logging.info('[login] unable to login: %s' % (to_login.__unicode__()))
 
     return render_template('login.html')
 
@@ -229,28 +235,25 @@ def confirm_register():
         logging.info('[confirm_register] password hash: %s' % (auth.pw_hash))
 
         # Make sure user isn't already in the db. 
-        query = User.query.filter_by(email=request.form.get('register_email')).first()
+        query = user.lookup_user(email)
 
         if query:
-            if request.form.get('register_email') == query.email:
+            if email == query.email:
                 return render_template('info.html', info='You have already registered')
 
         # Add the user to the db and generate the password hash.
         activation_code = generate_code()
         
-        user = User(email=request.form.get('register_email'), 
-                    password=auth.pw_hash,
-                    api_key_id=session['api_key_id'],
-                    api_code=session['api_code'],
-                    active=False,
-                    activation_code=activation_code)
+        user.add_user(
+                email=email, 
+                password=auth.pw_hash,
+                api_key_id=session['api_key_id'],
+                api_code=session['api_code'],
+                active=False,
+                activation_code=activation_code)
      
-        db.session.add(user)
-        db.session.commit()
-        
-        for c in session['characters']:
-            db.session.add(Character(character_id=c, user=user))
-            db.session.commit() 
+        for character_id in session['characters']:
+            print('Adding character %s to %s, result %s' % (character_id, email, user.add_character(email, character_id)))
 
         activation_link = 'http://%s/activate_account?activation_code=%s&email=%s' % (config['general']['hostname'], activation_code, email)
 
@@ -271,8 +274,7 @@ def email_reset_password():
         if not email:
             return render_template('info.html', info='Missing email')
 
-        query = User.query.filter_by(email=email).first()
-
+        query = user.lookup
         if not query:
             return render_template('info.html', info='User not found')
 
@@ -336,8 +338,8 @@ def user_change_password():
         if password != verify_password:
             return render_template('info.html', info='Passwords do not match')
             
-        auth = Auth(current_user.email, password)
-        current_user.password = auth.pw_hash
+        auth = Auth(current_user.user.email, password)
+        current_user.user.password = auth.pw_hash
         db.session.commit()
 
         return render_template('info.html', info='Password successfully updated.')
@@ -372,7 +374,7 @@ def activate_account():
 def statistics_pi(tier):
 
     results = {}
-    systems = ['jita', 'amarr']
+    systems = ['jita']
 
     for system_name in systems:
         system = utils.lookup_system(system_name)
@@ -409,29 +411,6 @@ def corp_contracts():
     return render_template('corp/contracts.html', contracts=contracts)
 
 
-@app.route('/corp/statistics/items_lost', methods=['GET'])
-@login_required
-def corp_items_lost():
-    items_lost = {}
-
-    for count in range(10):
-        kb_url = 'https://zkillboard.com/api/kills/allianceID/%s/page/%s/' % (corp.corporation_sheet()[0]['alliance']['id'], count)
-
-        data = json.loads(requests.get(kb_url).text)
-
-
-        for row in data:
-            for line in row['items']:
-                item = utils.lookup_typename(line['typeID'])[0]
-
-                if item not in items_lost:
-                    items_lost[item] = 1
-
-                else:
-                    items_lost[item] += 1
-
-
-    return render_template('corp/items_lost.html', items_lost=items_lost)
 
 @app.route('/statistics/ships_lost_details', methods=['GET'])
 @login_required
@@ -465,10 +444,10 @@ def statistics_ship_losses_details():
     days_ago     = current_time - datetime.timedelta(days=days) 
     
     if character_id:
-        query = losses.session.query(losses.base.classes.kills).filter(losses.base.classes.kills.killTime > days_ago).filter_by(characterID=character_id, shipTypeID=ship_id).all()
+        query = losses.query(characterID=character_id, shipTypeID=ship_id, days_ago=days_ago)
     
     else:
-        query = losses.session.query(losses.base.classes.kills).filter(losses.base.classes.kills.killTime > days_ago).filter_by(shipTypeID=ship_id).all()
+        query = losses.query(shipTypeID=ship_id, days_ago=days_ago)
     
     return render_template('statistics/ship_losses_details.html', data=query, ship_name=ship_name, ship_id=ship_id)
 
@@ -500,7 +479,7 @@ def statistics_ship_losses():
 
 
     days_ago      = current_time - datetime.timedelta(days=days) 
-    oldest_record = losses.session.query(losses.base.classes.kills).order_by(losses.base.classes.kills.killTime.asc()).first().killTime or None
+    oldest_record = losses.oldest_record()
 
     if oldest_record:
         days_stored   = current_time - oldest_record
@@ -509,10 +488,10 @@ def statistics_ship_losses():
         days_stored = 'N/A'
    
     if character_id:
-        query = losses.session.query(losses.base.classes.kills).filter(losses.base.classes.kills.killTime > days_ago).filter_by(characterID=character_id).all()
+        query = losses.query(days_ago=days_ago, characterID=character_id)
 
     else:
-        query = losses.session.query(losses.base.classes.kills).filter(losses.base.classes.kills.killTime > days_ago).all()
+        query = losses.query(days_ago=days_ago)
 
 
     ships_lost = {}

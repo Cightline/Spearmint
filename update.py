@@ -113,8 +113,8 @@ class Command():
         for system_name in self.config['statistics']['pi_systems']:
             system = self.utils.lookup_system(system_name).__dict__
 
-        for tier in self.config['statistics']['pi_tiers']:
-            self.pi_utils.store_prices(tier, system['solarSystemID'])
+            for tier in self.config['statistics']['pi_tiers']:
+                self.pi_utils.store_prices(tier, system['solarSystemID'])
                 
         print('Done')
 
