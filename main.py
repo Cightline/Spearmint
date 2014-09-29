@@ -66,14 +66,19 @@ cache =  Cache(app,config={'CACHE_DIR':'%s/cache' % (app.config['general']['base
                            'CACHE_DEFAULT_TIMEOUT':10000000000000000,
                            'CACHE_TYPE': app.config['general']['cache_type']})
 
+
+
+
 @cache.memoize()
 def character_name_from_id(id_):
     return eve.character_name_from_id(id_)[0]
 
 # Insecure?
+@cache.memoize()
 def character_id_from_name(name):
     return eve.character_ids_from_names([name])[0][name]
 
+@cache.memoize()
 def corp_name_from_corp_id(id_):
     corp_name = eve.affiliations_for_characters(id_)
     return corp_name[0][id_]['name']
@@ -488,27 +493,21 @@ def statistics_ship_losses():
         days_stored = 'N/A'
    
     if character_id:
-        query = losses.query(days_ago=days_ago, characterID=character_id)
+        query = losses.query_total(days_ago=days_ago, characterID=character_id)
 
     else:
-        query = losses.query(days_ago=days_ago)
+        query = losses.query_total(days_ago=days_ago)
 
 
     ships_lost = {}
 
     for ship in query:
 
-        ship_name = utils.lookup_typename(ship.shipTypeID) or 'NA'
-
-        if character_id:
-            if character_id != ship.characterID:
-                continue
+        ship_name = utils.lookup_typename(ship[0]) or 'NA'
 
         if ship_name not in ships_lost:
-            ships_lost[ship_name] = 1
+            ships_lost[ship_name] = ship[1]
 
-        else:
-            ships_lost[ship_name] += 1
        
     total_ships_lost = len(query)
 
