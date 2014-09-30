@@ -62,7 +62,11 @@ class User():
         if not q:
             return False
 
-        return q.characters_collection.append(character_id)
+        new_character = self.db.base.classes.characters(character_id=character_id)
+        q.characters_collection.append(new_character)
+        self.db.session.add(q)
+        self.db.session.commit()
+
 
 
 

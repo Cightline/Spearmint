@@ -8,9 +8,7 @@ import hashlib
 
 from urllib.parse import quote
 from functools    import wraps
-
-from flask import Flask, render_template, request, redirect, session, url_for, escape, Response
-
+from flask import Flask, render_template, request, redirect, session, url_for, escape, Response 
 from flask.ext.login import LoginManager, login_user, logout_user, current_user, login_required
 from flask.ext.cache import Cache
 
@@ -35,6 +33,12 @@ with open("config.json") as cfg:
 
 assert(config)
 
+
+db_path = config['database']['data'].split(':')[-1]
+
+if not os.path.exists(db_path):
+    print('Database at %s does not exist' % (db_path))
+    exit()
 
 eve = evelink.eve.EVE()
 emailtools = EmailTools(config)
@@ -258,15 +262,23 @@ def confirm_register():
                 activation_code=activation_code)
      
         for character_id in session['characters']:
-            print('Adding character %s to %s, result %s' % (character_id, email, user.add_character(email, character_id)))
+            logging.info('Adding character %s to %s, result %s' % (character_id, email, user.add_character(email, character_id)))
 
         activation_link = 'http://%s/activate_account?activation_code=%s&email=%s' % (config['general']['hostname'], activation_code, email)
 
-        emailtools.send_email(to=email, 
-                              subject='Activate your account', 
-                              body=activation_link)
+        try:
+            emailtools.send_email(to=email, 
+                                  subject='Activate your account', 
+                                  body=activation_link)
+
+        except ConnectionRefusedError:
+            logging.warn('error sending email, make sure the MTA is runnnig')
+
+            return info('Unable to send email, contact the admin')
 
         return render_template('submitted_register.html')
+
+
 
     return render_template('confirm_register.html', characters=session['characters'])
 

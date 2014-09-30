@@ -7,6 +7,9 @@ class Character(db.Model):
     character_id = db.Column(db.Integer)
     user_id      = db.Column(db.Integer, db.ForeignKey('user.id'))
 
+    def __unicode__(self):
+        return character_id
+
 
 class User(db.Model):
     id         = db.Column(db.Integer, primary_key=True)
