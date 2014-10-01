@@ -29,6 +29,7 @@ class Command():
         parser = argparse.ArgumentParser()
         parser.add_argument('--pi',        help='update the PI cache',  action='store_true')
         parser.add_argument('--losses',    help='update the items and ships that have been destroyed', action='store', type=int)
+        parser.add_argument('--coalition', help='coalition or alliance for --losses', action='store', type=str)
         parser.add_argument('--create-db', help='create the databases', action='store_true')
         parser.add_argument('--start',     help='page to start at for updating losses', action='store', type=int)
         self.args = parser.parse_args()
@@ -57,7 +58,11 @@ class Command():
 
         losses      = self.db
         items_lost_  = {}
-        alliance_id = self.corp.corporation_sheet()[0]['alliance']['id']
+        alliance_ids = []
+        alliances_requested = []
+
+        for coalition in self.config['coalitions']:
+            alliance_ids.extend(self.config['coalitions'][coalition])
 
         if self.args.start:
             start_page = self.args.start
@@ -68,44 +73,54 @@ class Command():
         for count in range(start_page, self.args.losses):
             print('Page %s of %s' % (count, self.args.losses))
 
-            kb_url =  'https://zkillboard.com/api/kills/allianceID/%s/page/%s/losses/' % (alliance_id, count)
-            
-            data = json.loads(requests.get(kb_url).text)
-          
-            for row in data:
-                # I'm putting row_count up here because its possible to already have the kill in the db. 
+            for alliance_id in alliance_ids:
 
-                #self.display_completion(row_count)
-                # 'killTime': '2014-09-19 21:27:00'
-                time_format = '%Y-%m-%d %H:%M:%S'
-                kill_time = datetime.datetime.strptime(row['killTime'], time_format)
-                kill_id   = row['killID']
-                
-                query = losses.session.query(losses.base.classes.kills).filter_by(killID=kill_id).first()
-
-                if query:
-                    #print('killID already exists, skipping')
+                if alliance_id in alliances_requested:
                     continue
+
+                alliances_requested.append(alliance_id)
+                print('Alliance %s' % (alliance_id))
+                kb_url =  'https://zkillboard.com/api/kills/allianceID/%s/page/%s/losses/' % (alliance_id, count)
+                
+                data = json.loads(requests.get(kb_url).text)
+
+                for row in data:
+                    # I'm putting row_count up here because its possible to already have the kill in the db. 
+
+                    #self.display_completion(row_count)
+                    # 'killTime': '2014-09-19 21:27:00'
+                    time_format = '%Y-%m-%d %H:%M:%S'
+                    kill_time = datetime.datetime.strptime(row['killTime'], time_format)
+                    kill_id   = row['killID']
+                
+                    query = losses.session.query(losses.base.classes.kills).filter_by(killID=kill_id).first()
+
+                    if query:
+                        #print('killID already exists, skipping')
+                        continue
     
         
-                kill = losses.base.classes.kills(killID=kill_id, 
+                    kill = losses.base.classes.kills(killID=kill_id, 
                              shipTypeID=row['victim']['shipTypeID'], 
                              killTime=kill_time,
-                             characterID=row['victim']['characterID'])
+                             characterID=row['victim']['characterID'],
+                             corporationID=row['victim']['corporationID'],
+                             allianceID=alliance_id)
+                            
 
 
-                for line in row['items']:
-                    #print('storing item: %s' % (self.utils.lookup_typename(line['typeID'])))
-                    item = losses.base.classes.items_lost(typeID=line['typeID'])
-                    kill.items_lost_collection.append(item)
+                    for line in row['items']:
+                        #print('storing item: %s' % (self.utils.lookup_typename(line['typeID'])))
+                        item = losses.base.classes.items_lost(typeID=line['typeID'])
+                        kill.items_lost_collection.append(item)
 
 
-                #print('storing ship: %s' % (self.utils.lookup_typename(row['victim']['shipTypeID'])))
+                    #print('storing ship: %s' % (self.utils.lookup_typename(row['victim']['shipTypeID'])))
                 
-                losses.session.add(kill) 
-                losses.session.commit()
+                    losses.session.add(kill) 
+                    losses.session.commit()
 
-            
+        alliances_requested = []        
 
     def update_pi(self):
         print('updating PI statistics...')

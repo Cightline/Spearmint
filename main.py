@@ -87,11 +87,19 @@ def corp_name_from_corp_id(id_):
     corp_name = eve.affiliations_for_characters(id_)
     return corp_name[0][id_]['name']
 
+@cache.memoize()
+def alliance_id_from_corp_id(corp_id):
+    sheet = corp.corporation_sheet(corp_id=corp_id)
+    
+    return sheet[0]['alliance']['name']
+
+
 
 app.jinja_env.filters['format_time'] = format_time
 app.jinja_env.filters['format_currency'] = format_currency
 app.jinja_env.filters['character_name_from_id'] = character_name_from_id
 app.jinja_env.filters['corp_name_from_corp_id'] = corp_name_from_corp_id
+app.jinja_env.filters['alliance_id_from_corp_id'] = alliance_id_from_corp_id
 app.jinja_env.filters['lookup_typename'] = utils.lookup_typename
 app.jinja_env.filters['quote'] = quote
 
@@ -455,18 +463,27 @@ def statistics_ship_losses_details():
             except:
                 return info('Unable to find character')
 
+    coalition = request.args.get('coalition')
 
+    if 'coalition' not in request.args:
+        coalition = list(config['coalitions'].keys())[0]
+
+    if coalition in config['coalitions']:
+        alliance_ids = config['coalitions'][coalition]
+
+    else:
+        return info('Incorrect coalition')
 
     current_time = datetime.datetime.utcnow() 
     days_ago     = current_time - datetime.timedelta(days=days) 
     
     if character_id:
-        query = losses.query(characterID=character_id, shipTypeID=ship_id, days_ago=days_ago)
+        query = losses.query(alliance_ids, characterID=character_id, shipTypeID=ship_id, days_ago=days_ago)
     
     else:
-        query = losses.query(shipTypeID=ship_id, days_ago=days_ago)
+        query = losses.query(alliance_ids, shipTypeID=ship_id, days_ago=days_ago)
     
-    return render_template('statistics/ship_losses_details.html', data=query, ship_name=ship_name, ship_id=ship_id)
+    return render_template('statistics/ship_losses_details.html', coalition=coalition, data=query, ship_name=ship_name, ship_id=ship_id)
 
 
 @app.route('/statistics/ships_lost', methods=['GET'])
@@ -476,6 +493,7 @@ def statistics_ship_losses():
     days         = 20
     character_id = None
     character    = None
+    total_ships_lost = 0
 
     if 'days' in request.args:
         try:
@@ -495,6 +513,18 @@ def statistics_ship_losses():
                     return info('Unable to find character')
 
 
+    coalition = request.args.get('coalition')
+    
+    if 'coalition' not in request.args:
+        coalition  = list(config['coalitions'].keys())[0]
+    
+    if coalition in config['coalitions']:
+        alliance_ids = config['coalitions'][coalition]
+
+    else:
+        return info('Incorrect coalition')
+
+
     days_ago      = current_time - datetime.timedelta(days=days) 
     oldest_record = losses.oldest_record()
 
@@ -505,25 +535,30 @@ def statistics_ship_losses():
         days_stored = 'N/A'
    
     if character_id:
-        query = losses.query_total(days_ago=days_ago, characterID=character_id)
+        query = losses.query_total(alliance_ids, days_ago=days_ago, characterID=character_id)
 
     else:
-        query = losses.query_total(days_ago=days_ago)
-
+        query = losses.query_total(alliance_ids, days_ago=days_ago)
 
     ships_lost = {}
 
     for ship in query:
 
         ship_name = utils.lookup_typename(ship[0]) or 'NA'
+        total_ships_lost += ship[1]
 
         if ship_name not in ships_lost:
             ships_lost[ship_name] = ship[1]
 
-       
-    total_ships_lost = len(query)
 
-    return render_template('statistics/ship_losses.html',  ships_lost=ships_lost, days=days, oldest_record=oldest_record, days_stored=days_stored.days, character=character, total_ships_lost=total_ships_lost)
+    return render_template('statistics/ship_losses.html',  config_coalitions=config['coalitions'], 
+                                                           coalition=coalition, 
+                                                           ships_lost=ships_lost, 
+                                                           days=days, 
+                                                           oldest_record=oldest_record, 
+                                                           days_stored=days_stored.days, 
+                                                           character=character, 
+                                                           total_ships_lost=total_ships_lost)
 
 
 

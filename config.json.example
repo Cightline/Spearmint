@@ -1,28 +1,37 @@
 {
     "general":{
-        "cache_type":"filesystem",
         "base_dir":"/home/stealth/programming/spearmint",
-        "hostname":"localhost"
+        "cache_type":"filesystem",
+        "hostname":"something.cc"
     },
 
     "email":{
-        "from":"email@localhost"
+        "from":"email@something.cc"
     },
 
     "database":{
-        "ccp_dump":"sqlite:////home/stealth/programming/spearmint/sqlite-latest.sqlite",
-        "data":"sqlite:////home/stealth/programming/spearmint/data.sqlite"
+        "data":"sqlite:////home/stealth/programming/spearmint/data.sqlite",
+        "ccp_dump":"sqlite:////home/stealth/programming/spearmint/sqlite-latest.sqlite"
+    },
+
+    "coalitions":{
+        "CFC":[1900696668,1695357456,741557221,150097440,131511956,1354830081,1220174199,151380924,99004503,1006830534],
+        "The Initiative.":[1900696668],
+        "Tactical Narcotics Team":[131511956],
+        "RAZOR Alliance":[741557221],
+        "LAWN":[150097440],
+        "Goonswarm Federation":[1354830081],
+        "Fatal Ascension":[1220174199],
+        "Executive Outcomes":[151380924],
+        "Forged of Fire":[99004503],
+        "Fidelas Constans":[1006830534],
+        "Pasta Syndicate":[99003550]
+
     },
 
     "corp_api":{
         "code":"",
         "key":""
-    },
-
-    "statistics":{
-        "pi_systems":["jita","amarr"],
-        "pi_tiers":[1,2,3]
     }
-
 }
          

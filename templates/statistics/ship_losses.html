@@ -19,7 +19,7 @@ $(document).ready( function() {
             <dd>{{ days_stored }}</dd>
             <dt>Total unique ships lost</dt>
             <dd>{{ ships_lost.values()|length }}</dt>
-            <dt>Total ships lost</dt>
+            <dt>Total ships lost</dd>
             <dd>{{ total_ships_lost }}</dd>
         </dl>
         <br>
@@ -43,6 +43,18 @@ $(document).ready( function() {
                 {% else %}
                 <input type="text" class="form-control" id="character"  name="character" value="all">
                 {% endif %}
+                <br>
+
+                <select class="form-control" id="coalition" name="coalition">
+                {% for c in config_coalitions %}
+                    {% if c == coalition %}
+                        <option value="{{ c }}" selected>{{ c }}</option>
+                    {% else %}
+                        <option value="{{ c }}">{{ c }}</option>
+                    {% endif %}
+                {% endfor %}
+                </select>
+
 
             </div>
                 
@@ -77,9 +89,9 @@ $(document).ready( function() {
                 {% for ship in ships_lost %}
                 <tr>
                     {% if character %}
-                    <td><a href="{{ url_for('statistics_ship_losses_details', days=days, ship=ship, character=character) }} ">{{ ship }}</a> </td>
+                    <td><a href="{{ url_for('statistics_ship_losses_details', coalition=coalition, days=days, ship=ship, character=character) }} ">{{ ship }}</a> </td>
                     {% else %}
-                    <td><a href="{{ url_for('statistics_ship_losses_details', days=days, ship=ship) }} ">{{ ship }}</a> </td>
+                    <td><a href="{{ url_for('statistics_ship_losses_details', coalition=coalition, days=days, ship=ship) }} ">{{ ship }}</a> </td>
                     {% endif %}
 
                         <td> {{ ships_lost[ship] }} </td>

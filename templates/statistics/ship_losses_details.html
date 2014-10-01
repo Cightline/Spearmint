@@ -16,6 +16,8 @@ $(document).ready( function() {
                 <thead>
                     <tr>
                         <th>Timestamp</th>
+                        <th class="text-right">Alliance</th>
+                        <th class="text-right">Corporation</th>
                         <th class="text-right">Character</th>
                         <th class="text-right">Kill ID</th>
                     </tr>
@@ -27,8 +29,11 @@ $(document).ready( function() {
                     <tr>
                         {# key is the price, the value is the item name #}
                         {% set character = row['characterID']|character_name_from_id %}
+                        {% set corp_id   = row['corporationID'] %}
                         <td> {{ row['killTime'] }}        </td>
-                        <td> <a href="{{ url_for('statistics_ship_losses', character=character) }}">{{ character }}</a>  </td>
+                        <td> {{ corp_id|alliance_id_from_corp_id }}        </td>
+                        <td> {{ row['corporationID']|corp_name_from_corp_id }}   </td>
+                        <td> <a href="{{ url_for('statistics_ship_losses', coalition=coalition, character=character) }}">{{ character }}</a>  </td>
                         <td> <a href="https://zkillboard.com/kill/{{ row['killID'] }}">{{ row['killID'] }}</a> </td>
                     </tr>
                 {% endfor %}
