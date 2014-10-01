@@ -30,11 +30,21 @@ $(document).ready( function() {
                         {# key is the price, the value is the item name #}
                         {% set character = row['characterID']|character_name_from_id %}
                         {% set corp_id   = row['corporationID'] %}
+
+                        {% if kills %}
                         <td> {{ row['killTime'] }}        </td>
                         <td> {{ corp_id|alliance_id_from_corp_id }}        </td>
-                        <td> {{ row['corporationID']|corp_name_from_corp_id }}   </td>
-                        <td> <a href="{{ url_for('statistics_ship_losses', coalition=coalition, character=character) }}">{{ character }}</a>  </td>
+                        <td> {{ row['corporationName'] }}   </td>
+                        <td> <a href="{{ url_for('statistics_ship_losses', kills=kills, coalition=coalition, character=character) }}">{{ character }}</a>  </td>
                         <td> <a href="https://zkillboard.com/kill/{{ row['killID'] }}">{{ row['killID'] }}</a> </td>
+
+                        {% else %}
+                        <td> {{ row['killTime'] }}        </td>
+                        <td> {{ corp_id|alliance_id_from_corp_id }}        </td>
+                        <td> {{ row['corporationName'] }}   </td>
+                        <td> <a href="{{ url_for('statistics_ship_losses', kills=kills, coalition=coalition, character=character) }}">{{ character }}</a>  </td>
+                        <td> <a href="https://zkillboard.com/kill/{{ row['killID'] }}">{{ row['killID'] }}</a> </td>
+                        {% endif %}
                     </tr>
                 {% endfor %}
                 </tbody>

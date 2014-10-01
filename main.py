@@ -83,9 +83,10 @@ def character_id_from_name(name):
     return eve.character_ids_from_names([name])[0][name]
 
 @cache.memoize()
-def corp_name_from_corp_id(id_):
+def corp_name_from_character_id(id_):
     corp_name = eve.affiliations_for_characters(id_)
     return corp_name[0][id_]['name']
+
 
 @cache.memoize()
 def alliance_id_from_corp_id(corp_id):
@@ -98,7 +99,7 @@ def alliance_id_from_corp_id(corp_id):
 app.jinja_env.filters['format_time'] = format_time
 app.jinja_env.filters['format_currency'] = format_currency
 app.jinja_env.filters['character_name_from_id'] = character_name_from_id
-app.jinja_env.filters['corp_name_from_corp_id'] = corp_name_from_corp_id
+app.jinja_env.filters['corp_name_from_character_id'] = corp_name_from_character_id
 app.jinja_env.filters['alliance_id_from_corp_id'] = alliance_id_from_corp_id
 app.jinja_env.filters['lookup_typename'] = utils.lookup_typename
 app.jinja_env.filters['quote'] = quote
@@ -282,7 +283,7 @@ def confirm_register():
         except ConnectionRefusedError:
             logging.warn('error sending email, make sure the MTA is runnnig')
 
-            return info('Unable to send email, contact the admin')
+            return info('Unable to send email, contact the admin', home_button=True)
 
         return render_template('submitted_register.html')
 
@@ -463,6 +464,18 @@ def statistics_ship_losses_details():
             except:
                 return info('Unable to find character')
 
+
+    kills = request.args.get('kills')
+
+    if kills == 'True':
+        kills = True
+
+    elif kills == 'False':
+        kills = False
+
+    else:
+        kills = True
+
     coalition = request.args.get('coalition')
 
     if 'coalition' not in request.args:
@@ -477,13 +490,9 @@ def statistics_ship_losses_details():
     current_time = datetime.datetime.utcnow() 
     days_ago     = current_time - datetime.timedelta(days=days) 
     
-    if character_id:
-        query = losses.query(alliance_ids, characterID=character_id, shipTypeID=ship_id, days_ago=days_ago)
+    query = losses.query(alliance_ids, characterID=character_id, shipTypeID=ship_id, days_ago=days_ago, kills=kills)
     
-    else:
-        query = losses.query(alliance_ids, shipTypeID=ship_id, days_ago=days_ago)
-    
-    return render_template('statistics/ship_losses_details.html', coalition=coalition, data=query, ship_name=ship_name, ship_id=ship_id)
+    return render_template('statistics/ship_losses_details.html', coalition=coalition, data=query, ship_name=ship_name, ship_id=ship_id, kills=kills)
 
 
 @app.route('/statistics/ships_lost', methods=['GET'])
@@ -513,8 +522,19 @@ def statistics_ship_losses():
                     return info('Unable to find character')
 
 
-    coalition = request.args.get('coalition')
-    
+    coalition      = request.args.get('coalition')
+    kills          = request.args.get('kills')
+
+    if kills == 'True':
+        kills = True
+
+    elif kills == 'False':
+        kills = False
+
+    else:
+        kills = True
+
+
     if 'coalition' not in request.args:
         coalition  = list(config['coalitions'].keys())[0]
     
@@ -535,10 +555,10 @@ def statistics_ship_losses():
         days_stored = 'N/A'
    
     if character_id:
-        query = losses.query_total(alliance_ids, days_ago=days_ago, characterID=character_id)
+            query = losses.query_total(alliance_ids, days_ago=days_ago, characterID=character_id, kills=kills)
 
     else:
-        query = losses.query_total(alliance_ids, days_ago=days_ago)
+        query = losses.query_total(alliance_ids, days_ago=days_ago, kills=kills)
 
     ships_lost = {}
 
@@ -558,7 +578,8 @@ def statistics_ship_losses():
                                                            oldest_record=oldest_record, 
                                                            days_stored=days_stored.days, 
                                                            character=character, 
-                                                           total_ships_lost=total_ships_lost)
+                                                           total_ships_lost=total_ships_lost,
+                                                           kills=kills)
 
 
 

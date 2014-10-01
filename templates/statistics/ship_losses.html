@@ -17,10 +17,17 @@ $(document).ready( function() {
             <dd>{{ oldest_record }}</dd>
             <dt>Days stored</dt>
             <dd>{{ days_stored }}</dd>
-            <dt>Total unique ships lost</dt>
-            <dd>{{ ships_lost.values()|length }}</dt>
-            <dt>Total ships lost</dd>
-            <dd>{{ total_ships_lost }}</dd>
+            {% if kills %}
+                <dt>Total unique ships used</dt>
+                <dd>{{ ships_lost.values()|length }}</dd>
+                <dt>Total ships used<dt>
+                <dd>{{ total_ships_lost }}</dd>
+            {% else %}
+                <dt>Total unique ships lost</dt>
+                <dd>{{ ships_lost.values()|length }}</dt>
+                <dt>Total ships lost</dt>
+                <dd>{{ total_ships_lost }}</dd>
+            {% endif %}
         </dl>
         <br>
 
@@ -36,6 +43,7 @@ $(document).ready( function() {
                 {% else %}
                     <input type="text" class="form-control" id="days"  name="days">
                 {% endif %}
+                <br>
 
                 <label for="character">Character</label>
                 {% if character %}
@@ -45,6 +53,7 @@ $(document).ready( function() {
                 {% endif %}
                 <br>
 
+                <label for="coalition">Coalition or Alliance</label>
                 <select class="form-control" id="coalition" name="coalition">
                 {% for c in config_coalitions %}
                     {% if c == coalition %}
@@ -54,6 +63,18 @@ $(document).ready( function() {
                     {% endif %}
                 {% endfor %}
                 </select>
+
+                <div class="radio">
+                    <label>
+                    <input type="radio" name="kills" id="kills" value="True" checked>
+                    Kills
+                    </label>
+
+                    <label>
+                    <input type="radio" name="kills" id="kills" value="False">
+                    Losses
+                    </label>
+                </div>  
 
 
             </div>
@@ -80,7 +101,12 @@ $(document).ready( function() {
             <table class="table table-striped table-bordered" cellspacing="0" width="100%" id="table">
                 <thead>
                     <tr>
-                        <th>Ship Lost</th>
+                        {% if kills %}
+                            <th>Ship Used</th>
+
+                        {% else %}
+                            <th>Ship Lost</th>
+                        {% endif %}
                         <th class="text-right">Quantity</th>
                     </tr>
                         
@@ -89,9 +115,9 @@ $(document).ready( function() {
                 {% for ship in ships_lost %}
                 <tr>
                     {% if character %}
-                    <td><a href="{{ url_for('statistics_ship_losses_details', coalition=coalition, days=days, ship=ship, character=character) }} ">{{ ship }}</a> </td>
+                    <td><a href="{{ url_for('statistics_ship_losses_details', kills=kills, coalition=coalition, days=days, ship=ship, character=character) }} ">{{ ship }}</a> </td>
                     {% else %}
-                    <td><a href="{{ url_for('statistics_ship_losses_details', coalition=coalition, days=days, ship=ship) }} ">{{ ship }}</a> </td>
+                    <td><a href="{{ url_for('statistics_ship_losses_details', kills=kills, coalition=coalition, days=days, ship=ship) }} ">{{ ship }}</a> </td>
                     {% endif %}
 
                         <td> {{ ships_lost[ship] }} </td>

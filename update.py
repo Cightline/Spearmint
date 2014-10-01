@@ -80,11 +80,12 @@ class Command():
 
                 alliances_requested.append(alliance_id)
                 print('Alliance %s' % (alliance_id))
-                kb_url =  'https://zkillboard.com/api/kills/allianceID/%s/page/%s/losses/' % (alliance_id, count)
+                kb_url =  'https://zkillboard.com/api/kills/allianceID/%s/page/%s/' % (alliance_id, count)
                 
                 data = json.loads(requests.get(kb_url).text)
 
                 for row in data:
+                    
                     # I'm putting row_count up here because its possible to already have the kill in the db. 
 
                     #self.display_completion(row_count)
@@ -98,15 +99,18 @@ class Command():
                     if query:
                         #print('killID already exists, skipping')
                         continue
-    
+   
+
         
                     kill = losses.base.classes.kills(killID=kill_id, 
                              shipTypeID=row['victim']['shipTypeID'], 
                              killTime=kill_time,
                              characterID=row['victim']['characterID'],
                              corporationID=row['victim']['corporationID'],
-                             allianceID=alliance_id)
+                             corporationName=row['victim']['corporationName'],
+                             allianceID=row['victim']['allianceID'])
                             
+                    
 
 
                     for line in row['items']:
@@ -114,13 +118,24 @@ class Command():
                         item = losses.base.classes.items_lost(typeID=line['typeID'])
                         kill.items_lost_collection.append(item)
 
+                    for line in row['attackers']:
+                        attacker = losses.base.classes.attacker(weaponTypeID=line['weaponTypeID'], 
+                                                                allianceID=line['allianceID'],
+                                                                corporationName=line['corporationName'],
+                                                                shipTypeID=line['shipTypeID'],
+                                                                characterName=line['characterName'],
+                                                                characterID=line['characterID'],
+                                                                allianceName=line['allianceName'])
+
+                        kill.attacker_collection.append(attacker)
+
 
                     #print('storing ship: %s' % (self.utils.lookup_typename(row['victim']['shipTypeID'])))
                 
                     losses.session.add(kill) 
                     losses.session.commit()
 
-        alliances_requested = []        
+            alliances_requested = []        
 
     def update_pi(self):
         print('updating PI statistics...')
