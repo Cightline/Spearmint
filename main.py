@@ -503,6 +503,7 @@ def statistics_ship_losses():
     character_id = None
     character    = None
     total_ships_lost = 0
+    ships_lost   = {}
 
     if 'days' in request.args:
         try:
@@ -546,13 +547,8 @@ def statistics_ship_losses():
 
 
     days_ago      = current_time - datetime.timedelta(days=days) 
-    oldest_record = losses.oldest_record()
 
-    if oldest_record:
-        days_stored   = current_time - oldest_record
 
-    else:
-        days_stored = 'N/A'
    
     if character_id:
             query = losses.query_total(alliance_ids, days_ago=days_ago, characterID=character_id, kills=kills)
@@ -560,7 +556,13 @@ def statistics_ship_losses():
     else:
         query = losses.query_total(alliance_ids, days_ago=days_ago, kills=kills)
 
-    ships_lost = {}
+    oldest_record = losses.oldest_record(alliance_ids, kills)
+    
+    if oldest_record:
+        days_stored   = current_time - oldest_record
+
+    else:
+        days_stored = 'N/A'
 
     for ship in query:
 

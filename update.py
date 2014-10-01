@@ -100,7 +100,6 @@ class Command():
                         #print('killID already exists, skipping')
                         continue
    
-
         
                     kill = losses.base.classes.kills(killID=kill_id, 
                              shipTypeID=row['victim']['shipTypeID'], 
@@ -109,8 +108,6 @@ class Command():
                              corporationID=row['victim']['corporationID'],
                              corporationName=row['victim']['corporationName'],
                              allianceID=row['victim']['allianceID'])
-                            
-                    
 
 
                     for line in row['items']:
@@ -119,6 +116,8 @@ class Command():
                         kill.items_lost_collection.append(item)
 
                     for line in row['attackers']:
+                        if int(line['shipTypeID']) == 0:
+                            input(row)
                         attacker = losses.base.classes.attacker(weaponTypeID=line['weaponTypeID'], 
                                                                 allianceID=line['allianceID'],
                                                                 corporationName=line['corporationName'],

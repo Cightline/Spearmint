@@ -10,7 +10,6 @@ $(document).ready( function() {
 
 <div class="row">
     <div class="col-md-2">
-
         <font face="monospace">
         <dl>
             <dt>Oldest record</dt>
@@ -18,11 +17,13 @@ $(document).ready( function() {
             <dt>Days stored</dt>
             <dd>{{ days_stored }}</dd>
             {% if kills %}
+                {# Losses #}
                 <dt>Total unique ships used</dt>
                 <dd>{{ ships_lost.values()|length }}</dd>
                 <dt>Total ships used<dt>
                 <dd>{{ total_ships_lost }}</dd>
             {% else %}
+                {# Kills #}
                 <dt>Total unique ships lost</dt>
                 <dd>{{ ships_lost.values()|length }}</dt>
                 <dt>Total ships lost</dt>
@@ -39,75 +40,64 @@ $(document).ready( function() {
             <div class="form-group">
                 <label for="days">Days in the past</label>
                 {% if days %}
-                <input type="text" class="form-control" id="days"  name="days" value={{ days }}>
+                    <input type="text" class="form-control" id="days"  name="days" value={{ days }}>
                 {% else %}
                     <input type="text" class="form-control" id="days"  name="days">
                 {% endif %}
+                
                 <br>
-
                 <label for="character">Character</label>
-                {% if character %}
-                <input type="text" class="form-control" id="character"  name="character" value="{{ character }}">
-                {% else %}
-                <input type="text" class="form-control" id="character"  name="character" value="all">
-                {% endif %}
+                    {% if character %}
+                        <input type="text" class="form-control" id="character"  name="character" value="{{ character }}">
+                    {% else %}
+                        <input type="text" class="form-control" id="character"  name="character" value="all">
+                    {% endif %}
                 <br>
 
                 <label for="coalition">Coalition or Alliance</label>
-                <select class="form-control" id="coalition" name="coalition">
-                {% for c in config_coalitions %}
-                    {% if c == coalition %}
-                        <option value="{{ c }}" selected>{{ c }}</option>
-                    {% else %}
-                        <option value="{{ c }}">{{ c }}</option>
-                    {% endif %}
-                {% endfor %}
+                    <select class="form-control" id="coalition" name="coalition">
+                        {% for c in config_coalitions %}
+                            {% if c == coalition %}
+                                <option value="{{ c }}" selected>{{ c }}</option>
+                            {% else %}
+                                <option value="{{ c }}">{{ c }}</option>
+                            {% endif %}
+                        {% endfor %}
                 </select>
 
                 <div class="radio">
+                    {# kills=True looks up kills, kills=False looks up losses #}
                     <label>
-                    <input type="radio" name="kills" id="kills" value="True" checked>
-                    Kills
+                    <input type="radio" name="kills" id="kills" value="True" {% if kills %} checked {% endif %}>
+                     Kills
                     </label>
 
                     <label>
-                    <input type="radio" name="kills" id="kills" value="False">
-                    Losses
+                    <input type="radio" name="kills" id="kills" value="False" {% if not kills %} checked {% endif %}>
+                     Losses
                     </label>
                 </div>  
-
-
             </div>
-                
                 <button type="submit" class="btn btn-default" value="submit">Update</button>
         </form>
-
         </font>
     </div>
 
-
-
     <div class="col-md-12">
-            
             <a href='/corp/items_lost'>Items Lost</a>
             <br>
             <br>
 
-            {# Days #}
-
-
-
-            {# We just need one "date" #}
             <table class="table table-striped table-bordered" cellspacing="0" width="100%" id="table">
                 <thead>
                     <tr>
                         {% if kills %}
-                            <th>Ship Used</th>
-
+                            <th class="text-left">Ship Used</th>
                         {% else %}
-                            <th>Ship Lost</th>
+                            <th class="text-left">Ship Lost</th>
                         {% endif %}
-                        <th class="text-right">Quantity</th>
+                        <th >Quantity</th>
+                        <th >Usage</th>
                     </tr>
                         
                 </thead>
@@ -115,15 +105,14 @@ $(document).ready( function() {
                 {% for ship in ships_lost %}
                 <tr>
                     {% if character %}
-                    <td><a href="{{ url_for('statistics_ship_losses_details', kills=kills, coalition=coalition, days=days, ship=ship, character=character) }} ">{{ ship }}</a> </td>
+                    <td ><a href="{{ url_for('statistics_ship_losses_details', kills=kills, coalition=coalition, days=days, ship=ship, character=character) }} ">{{ ship }}</a> </td>
                     {% else %}
                     <td><a href="{{ url_for('statistics_ship_losses_details', kills=kills, coalition=coalition, days=days, ship=ship) }} ">{{ ship }}</a> </td>
                     {% endif %}
-
-                        <td> {{ ships_lost[ship] }} </td>
+                    <td> {{ ships_lost[ship] }} </td>
+                    <td> {{ (100 * ships_lost[ship]/total_ships_lost)|format_currency }}%</td>
                 </tr>
                 {% endfor %}
-
                 </tbody>
             </table>
         </div>

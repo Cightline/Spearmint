@@ -8,9 +8,12 @@ class LossesUtils():
         self.classes = self.db.base.classes
         
 
-    def oldest_record(self):
+    def oldest_record(self, alliance_ids, kills=True):
         # Get the first killTime recorded
-        return self.db.session.query(self.classes.kills).order_by(self.classes.kills.killTime.asc()).first().killTime or  None
+        if kills:
+                return self.db.session.query(self.classes.attacker.killTime).filter(self.classes.attacker.allianceID.in_(alliance_ids)).order_by(self.classes.attacker.killTime.asc()).first().killTime
+
+        return self.db.session.query(self.classes.kills.killTime).filter(self.classes.kills.allianceID.in_(alliance_ids)).order_by(self.classes.kills.killTime.asc()).first().killTime 
 
 
 
@@ -28,7 +31,6 @@ class LossesUtils():
                     self.classes.kills.killTime > days_ago).group_by(self.classes.kills.shipTypeID).filter_by(characterID=characterID).filter(
                             self.classes.kills.allianceID.in_(alliance_ids)).all()
 
-        print('last')
         return self.db.session.query(self.classes.kills.shipTypeID, func.count(self.classes.kills.shipTypeID)).group_by(self.classes.kills.shipTypeID).filter(self.classes.kills.killTime > days_ago).filter(
                 self.db.base.classes.kills.allianceID.in_(alliance_ids)).all()
 
