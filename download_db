@@ -1,1 +1,2 @@
 wget -c https://www.fuzzwork.co.uk/dump/sqlite-latest.sqlite.bz2
+bunzip2 sqlite-latest.sqlite.bz2

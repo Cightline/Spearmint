@@ -29,6 +29,11 @@
 
     },
 
+    "statistics":{
+        "pi_systems":["jita"],
+        "pi_tiers":[1,2,3]
+    },
+
     "corp_api":{
         "code":"",
         "key":""
