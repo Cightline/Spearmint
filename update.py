@@ -116,8 +116,6 @@ class Command():
                         kill.items_lost_collection.append(item)
 
                     for line in row['attackers']:
-                        if int(line['shipTypeID']) == 0:
-                            input(row)
                         attacker = losses.base.classes.attacker(weaponTypeID=line['weaponTypeID'], 
                                                                 allianceID=line['allianceID'],
                                                                 corporationName=line['corporationName'],
