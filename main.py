@@ -139,8 +139,8 @@ def load_user(id):
     return user.load_user(id) or None
 
 
-def info(info):
-    return render_template('info.html', info=info)
+def info(info, home_button=False):
+    return render_template('info.html', info=info, home_button=home_button)
 
 @app.route('/login', methods=['POST','GET'])
 def login():
