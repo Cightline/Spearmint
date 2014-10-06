@@ -374,6 +374,11 @@ def activate_account():
     
     return render_template('info.html', info='Invalid activation code or email')
 
+@app.route('/statistics', methods=['GET'])
+@login_required
+def statistics_index():
+    return render_template('statistics/index.html')
+
 @app.route('/statistics/pi/<int:tier>', methods=['GET', 'POST'])
 @login_required
 def statistics_pi(tier):
@@ -417,9 +422,9 @@ def corp_contracts():
 
 
 
-@app.route('/statistics/ships_lost_details', methods=['GET'])
+@app.route('/statistics/ships_details', methods=['GET'])
 @login_required
-def statistics_ship_losses_details():
+def statistics_ships_details():
     days = 20
     character_id = None
 
@@ -435,6 +440,7 @@ def statistics_ship_losses_details():
 
         if not ship_id:
             info('Ship not found') 
+
     if 'character' in request.args:
         character = request.args.get('character')
         if character != 'all':
@@ -442,7 +448,6 @@ def statistics_ship_losses_details():
                 character_id = int(character_id_from_name(request.args.get('character')))
             except:
                 return info('Unable to find character')
-
 
 
     current_time = datetime.datetime.utcnow() 
@@ -454,12 +459,12 @@ def statistics_ship_losses_details():
     else:
         query = losses.query(shipTypeID=ship_id, days_ago=days_ago)
     
-    return render_template('statistics/ship_losses_details.html', data=query, ship_name=ship_name, ship_id=ship_id)
+    return render_template('statistics/ships_details.html', data=query, ship_name=ship_name, ship_id=ship_id)
 
 
-@app.route('/statistics/ships_lost', methods=['GET'])
+@app.route('/statistics/ships', methods=['GET'])
 @login_required
-def statistics_ship_losses():
+def statistics_ships():
     current_time = datetime.datetime.utcnow() 
     days         = 20
     character_id = None
@@ -511,7 +516,7 @@ def statistics_ship_losses():
        
     total_ships_lost = len(query)
 
-    return render_template('statistics/ship_losses.html',  ships_lost=ships_lost, days=days, oldest_record=oldest_record, days_stored=days_stored.days, character=character, total_ships_lost=total_ships_lost)
+    return render_template('statistics/ships.html',  ships_lost=ships_lost, days=days, oldest_record=oldest_record, days_stored=days_stored.days, character=character, total_ships_lost=total_ships_lost)
 
 
 
