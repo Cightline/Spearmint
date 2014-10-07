@@ -438,9 +438,9 @@ def corp_contracts():
 
 
 
-@app.route('/statistics/ships_lost_details', methods=['GET'])
+@app.route('/statistics/ships_details', methods=['GET'])
 @login_required
-def statistics_ship_losses_details():
+def statistics_ships_details():
     days = 20
     character_id = None
 
@@ -492,12 +492,12 @@ def statistics_ship_losses_details():
     
     query = losses.query(alliance_ids, characterID=character_id, shipTypeID=ship_id, days_ago=days_ago, kills=kills)
     
-    return render_template('statistics/ship_losses_details.html', coalition=coalition, data=query, ship_name=ship_name, ship_id=ship_id, kills=kills)
+    return render_template('statistics/ships_details.html', coalition=coalition, data=query, ship_name=ship_name, ship_id=ship_id, kills=kills)
 
 
-@app.route('/statistics/ships_lost', methods=['GET'])
+@app.route('/statistics/ships', methods=['GET'])
 @login_required
-def statistics_ship_losses():
+def statistics_ships():
     current_time = datetime.datetime.utcnow() 
     days         = 20
     character_id = None
@@ -573,7 +573,7 @@ def statistics_ship_losses():
             ships_lost[ship_name] = ship[1]
 
 
-    return render_template('statistics/ship_losses.html',  config_coalitions=config['coalitions'], 
+    return render_template('statistics/ships.html',  config_coalitions=config['coalitions'], 
                                                            coalition=coalition, 
                                                            ships_lost=ships_lost, 
                                                            days=days, 
