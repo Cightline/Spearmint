@@ -34,7 +34,7 @@ $(document).ready( function() {
 
     </div>
 
-    <div class="col-md-2">
+    <div class="col-md-3">
 
         <form role="form" action="{{ url_for('statistics_ships') }}" id="submit_query">
             <div class="form-group">
@@ -66,15 +66,19 @@ $(document).ready( function() {
                 </select>
 
                 <div class="radio">
-                    {# kills=True looks up kills, kills=False looks up losses #}
                     <label>
-                    <input type="radio" name="kills" id="kills" value="True" {% if kills %} checked {% endif %}>
-                     Kills
+                    <input type="radio" name="kills" id="kills" value="used" {% if kills == 'used' %} checked {% endif %}>
+                     Ship used 
                     </label>
 
                     <label>
-                    <input type="radio" name="kills" id="kills" value="False" {% if not kills %} checked {% endif %}>
-                     Losses
+                    <input type="radio" name="kills" id="kills" value="lost" {% if kills == 'lost' %} checked {% endif %}>
+                    Ship lost 
+                    </label>
+
+                    <label>
+                        <input type="radio" name"kills" id="kills" value="killed" {% if kills == 'killed' %} checked {% endif %}>
+                    Ship killed
                     </label>
                 </div>  
             </div>

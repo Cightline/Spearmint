@@ -146,6 +146,12 @@ def info(info, home_button=False):
 
 @app.route('/login', methods=['POST','GET'])
 def login():
+
+    next_page = request.args.get('next')
+
+    if next_page:
+        session['next_page'] = next_page
+
     if current_user.is_authenticated():
         return render_template('info.html', info='You are already logged in')
     
@@ -164,12 +170,9 @@ def login():
             
         if login_user(to_login):
             logging.info('[login] logged in: %s' % (current_user.user.email))
-                
-            # Fix this, it needs to actually redirect. 
-            next_page = request.form.get('next')
-
-            if next_page:
-                return redirect(next_page)
+               
+            if 'next_page' in session:
+                return redirect(session['next_page'])
 
             else:
                 return redirect('/')
@@ -445,6 +448,7 @@ def corp_contracts():
 def statistics_ships_details():
     days = 20
     character_id = None
+    kill_options = ['used','lost','killed']
 
     if 'days' in request.args:
         try:
@@ -458,6 +462,7 @@ def statistics_ships_details():
 
         if not ship_id:
             info('Ship not found') 
+
     if 'character' in request.args:
         character = request.args.get('character')
         if character != 'all':
@@ -467,18 +472,11 @@ def statistics_ships_details():
                 return info('Unable to find character')
 
 
-    kills = request.args.get('kills')
-
-    if kills == 'True':
-        kills = True
-
-    elif kills == 'False':
-        kills = False
-
-    else:
-        kills = True
-
+    kill_option = request.args.get('kills')
     coalition = request.args.get('coalition')
+
+    if kill_option not in kill_options:
+        return info('Incorrect option selected')
 
     if 'coalition' not in request.args:
         coalition = list(config['coalitions'].keys())[0]
@@ -506,6 +504,7 @@ def statistics_ships():
     character    = None
     total_ships_lost = 0
     ships_lost   = {}
+    kill_options = ['used','lost','killed']
 
     if 'days' in request.args:
         try:
@@ -526,17 +525,11 @@ def statistics_ships():
 
 
     coalition      = request.args.get('coalition')
-    kills          = request.args.get('kills')
+    kill_option    = request.args.get('kills')
+    days_ago       = current_time - datetime.timedelta(days=days) 
 
-    if kills == 'True':
-        kills = True
-
-    elif kills == 'False':
-        kills = False
-
-    else:
-        kills = True
-
+    if kill_option not in kill_options:
+        return info('Incorrect option selected')
 
     if 'coalition' not in request.args:
         coalition  = list(config['coalitions'].keys())[0]
@@ -548,10 +541,6 @@ def statistics_ships():
         return info('Incorrect coalition')
 
 
-    days_ago      = current_time - datetime.timedelta(days=days) 
-
-
-   
     if character_id:
             query = losses.query_total(alliance_ids, days_ago=days_ago, characterID=character_id, kills=kills)
 

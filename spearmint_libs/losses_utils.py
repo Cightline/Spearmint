@@ -8,23 +8,24 @@ class LossesUtils():
         self.classes = self.db.base.classes
         
 
-    def oldest_record(self, alliance_ids, kills=True):
+    def oldest_record(self, alliance_ids, kills='kills'):
         # Get the first killTime recorded
-        if kills:
+        if kills == 'kills':
                 return self.db.session.query(self.classes.attacker.killTime).filter(self.classes.attacker.allianceID.in_(alliance_ids)).order_by(self.classes.attacker.killTime.asc()).first().killTime
 
         return self.db.session.query(self.classes.kills.killTime).filter(self.classes.kills.allianceID.in_(alliance_ids)).order_by(self.classes.kills.killTime.asc()).first().killTime 
 
 
 
-    def query_total(self, alliance_ids, characterID=None, days_ago=1000, kills=True):
-        if kills and characterID:
+    def query_total(self, alliance_ids, characterID=None, days_ago=1000, kills='used'):
+        if kills == 'used' and characterID:
             return self.db.session.query(self.classes.attacker.shipTypeID, func.count(self.classes.attacker.shipTypeID)).group_by(self.classes.attacker.shipTypeID).filter(
                     self.classes.attacker.allianceID.in_(alliance_ids)).filter(self.classes.attacker.killTime > days_ago).filter_by(characterID=characterID).all()
            
-        if kills:
+        if kills == 'used':
             return self.db.session.query(self.classes.attacker.shipTypeID, func.count(self.classes.attacker.shipTypeID)).group_by(self.classes.attacker.shipTypeID).filter(
                     self.classes.attacker.allianceID.in_(alliance_ids)).filter(self.classes.attacker.killTime > days_ago).all()
+
 
         if characterID:
             return self.db.session.query(self.classes.kills.shipTypeID, func.count(self.classes.kills.shipTypeID)).filter(
@@ -35,9 +36,9 @@ class LossesUtils():
                 self.db.base.classes.kills.allianceID.in_(alliance_ids)).all()
 
 
-    def query(self, alliance_ids, characterID=None, shipTypeID=None, days_ago=1000, kills=True):
+    def query(self, alliance_ids, characterID=None, shipTypeID=None, days_ago=1000, kills='used'):
 
-        if kills:
+        if kills == 'used':
             if characterID and shipTypeID:
                 return self.db.session.query(self.classes.attacker).filter(self.classes.attacker.killTime > days_ago).filter_by(characterID=characterID, shipTypeID=shipTypeID).filter(
                         self.classes.attacker.allianceID.in_(alliance_ids)).all()
