@@ -476,7 +476,7 @@ def statistics_ships_details():
     coalition = request.args.get('coalition')
 
     if kill_option not in kill_options:
-        return info('Incorrect option selected')
+        kill_option = 'used'
 
     if 'coalition' not in request.args:
         coalition = list(config['coalitions'].keys())[0]
@@ -490,9 +490,9 @@ def statistics_ships_details():
     current_time = datetime.datetime.utcnow() 
     days_ago     = current_time - datetime.timedelta(days=days) 
     
-    query = losses.query(alliance_ids, characterID=character_id, shipTypeID=ship_id, days_ago=days_ago, kills=kills)
+    query = losses.query(alliance_ids, characterID=character_id, shipTypeID=ship_id, days_ago=days_ago, kills=kill_option)
     
-    return render_template('statistics/ships_details.html', coalition=coalition, data=query, ship_name=ship_name, ship_id=ship_id, kills=kills)
+    return render_template('statistics/ships_details.html', coalition=coalition, data=query, ship_name=ship_name, ship_id=ship_id, kills=kill_option)
 
 
 @app.route('/statistics/ships', methods=['GET'])
@@ -529,7 +529,7 @@ def statistics_ships():
     days_ago       = current_time - datetime.timedelta(days=days) 
 
     if kill_option not in kill_options:
-        return info('Incorrect option selected')
+        kill_option = 'used'
 
     if 'coalition' not in request.args:
         coalition  = list(config['coalitions'].keys())[0]
@@ -542,12 +542,12 @@ def statistics_ships():
 
 
     if character_id:
-            query = losses.query_total(alliance_ids, days_ago=days_ago, characterID=character_id, kills=kills)
+            query = losses.query_total(alliance_ids, days_ago=days_ago, characterID=character_id, kills=kill_option)
 
     else:
-        query = losses.query_total(alliance_ids, days_ago=days_ago, kills=kills)
+        query = losses.query_total(alliance_ids, days_ago=days_ago, kills=kill_option)
 
-    oldest_record = losses.oldest_record(alliance_ids, kills)
+    oldest_record = losses.oldest_record(alliance_ids, kill_option)
     
     if oldest_record:
         days_stored   = current_time - oldest_record
@@ -572,7 +572,7 @@ def statistics_ships():
                                                            days_stored=days_stored.days, 
                                                            character=character, 
                                                            total_ships_lost=total_ships_lost,
-                                                           kills=kills)
+                                                           kills=kill_option)
 
 
 
