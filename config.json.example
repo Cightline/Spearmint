@@ -2,7 +2,8 @@
     "general":{
         "base_dir":"/home/stealth/programming/spearmint",
         "cache_type":"filesystem",
-        "hostname":"something.cc"
+        "hostname":"something.cc",
+        "navbar_brand":"BRAND"
     },
 
     "email":{

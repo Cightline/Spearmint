@@ -58,9 +58,11 @@ login_manager.init_app(app)
 logging.basicConfig(filename=app.config['log_path'], level=logging.DEBUG)
 
 # Setup the corp api object and get the corp ID
-corp_api = evelink.api.API(api_key=(app.config['corp_api']['key'], app.config['corp_api']['code']))
-corp     = evelink.corp.Corp(corp_api)
-app.config['corp_id']  = corp.corporation_sheet()[0]['id']
+corp_api   = evelink.api.API(api_key=(app.config['corp_api']['key'], app.config['corp_api']['code']))
+corp       = evelink.corp.Corp(corp_api)
+corp_sheet = corp.corporation_sheet()[0]
+app.config['corp_id']   = corp_sheet['id']
+app.config['corp_name'] = corp_sheet['name']
 
 
 utils =  Utils(app.config)

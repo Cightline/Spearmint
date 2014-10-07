@@ -38,7 +38,7 @@ $(document).ready( function() {
                             <td class="text-left"> N\A                                  </td>
                         {% endif %}
                         <td class="text-left"> {{ contracts[row]['issued']|format_time }}        </td>
-                        <td class="text-left"> {{ contracts[row]['issuer_corp']|corp_name_from_corp_id }}        </td>
+                        <td class="text-left"> {{ contracts[row]['issuer_corp']|corp_name_from_character_id }}        </td>
                         <td class="text-left"> {{ contracts[row]['acceptor']|character_name_from_id }}        </td>
                         <td class="text-left"> {{ contracts[row]['price']|format_currency }}        </td>
                         <td class="text-left"> {{ contracts[row]['type'] }}        </td>

@@ -8,8 +8,7 @@
 {# Used to show the "active" tab #}
 
 {% if current_user.email %}
-{% set navigation_bar = [('/corp/index', 'Corp'),
-                         ('/user/index', 'Settings')] -%}
+{% set navigation_bar = [('/user/index', 'Settings')] -%}
 
 {% else %}
     {% set navigation_bar = [] -%}
@@ -27,7 +26,7 @@
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand " href="/">JIDF</a>
+      <a class="navbar-brand " href="/">{{ config['general']['navbar_brand'] }}</a>
     </div>
 
     <!-- Collect the nav links, forms, and other content for toggling -->
@@ -45,6 +44,16 @@
                     <li><a href="{{ url_for('statistics_ships') }}">Ships</a></li>
                 </ul>
           </li>
+
+          <li class="dropdown">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown">Corp<span class="caret"></span></a>
+              <ul class="dropdown-menu" role="menu">
+                  <li><a href="{{ url_for('corp_contracts') }}">Contracts</a></li>
+                  <li><a href="{{ url_for('corp_transactions') }}">Transactions</a></li>
+                  <li><a href="{{ url_for('corp_standings') }}">Standings</a></li>
+              </ul>
+          </li>
+
           {% endif %}
 
           {% for href, name in navigation_bar %}
