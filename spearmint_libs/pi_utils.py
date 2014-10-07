@@ -57,7 +57,9 @@ class PiUtils():
 
         '''Returns a sqlalchemy "Pi" object with the prices from the database'''
 
-        query = self.db.session.query(self.classes.pi).filter_by(system=system, tier=tier).all()
+        latest_entry = self.db.session.query(self.classes.pi.date).order_by(self.classes.pi.date.desc()).filter_by(tier=tier).first()
+
+        query = self.db.session.query(self.classes.pi).filter_by(system=system, tier=tier, date=latest_entry.date).all()
 
         return query or None
 
